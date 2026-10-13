@@ -3,7 +3,8 @@
 Source-reviewed protocol: rust-v0.159.0 / 687a119f0fcaace47e1f1abcc77cec6c813fd6da.
 workspaceRouting is experimental. A missing field is an explicit unsupported profile,
 not permission to guess an account from email/JWT or to read another credential store.
-Adapted from the Pro implementation. Sessions are fresh per shared lookup; no completed-token or native-process cache is retained.
+Adapted from the Pro implementation. One live session serves successive lookups (bounded age,
+retired on any fault or refresh); every lookup re-reads native state and no completed token is cached.
 """
 from __future__ import annotations
 

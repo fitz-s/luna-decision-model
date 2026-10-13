@@ -1,4 +1,5 @@
 """Reuse native Codex ChatGPT OAuth in memory; never persist a credential copy."""
+import atexit
 import http.client
 import os
 from pathlib import Path
@@ -70,22 +71,115 @@ def connection(timeout, *, context=None):
     return conn, path, headers
 
 
+SESSION_MAX_AGE=300  # seconds; bounds how long one native process serves lookups
+_session_lock=threading.Lock()
+_session=None
+
+
+def _drop_session():
+    global _session
+    with _session_lock:
+        old,_session=_session,None
+    if old is not None:old.close()
+
+
+def _store_state():
+    """Stat-only identity of the native file store, or None when it cannot be observed.
+
+    Uses the same CODEX_HOME resolution that native_rpc passes to the child process.
+    Login, logout, rotation and config edits rewrite one of these files (in place, so
+    size and mtime_ns carry the change). Not observed, and bounded by SESSION_MAX_AGE:
+    system or managed config layers, a keyring that coexists with a leftover auth.json,
+    and same-size rewrites within one mtime tick on coarse-timestamp filesystems.
+    """
+    home=auth_file().parent
+    state=[str(home)]
+    for name in ("auth.json", "config.toml"):
+        try:
+            st=os.stat(home/name)
+        except FileNotFoundError:
+            if name=="auth.json":return None  # keyring or other non-file store
+            state.append(None)
+            continue
+        except OSError:
+            return None
+        state.append((st.st_ino, st.st_size, st.st_mtime_ns))
+    return tuple(state)
+
+
+def _shared_credential(deadline):
+    """Fresh native read per lookup over one live app-server.
+
+    Spawning `codex app-server` costs ~100 ms plus ~220 ms of cold account discovery,
+    so a per-request process dominated local latency. Each call still performs the full
+    guarded getAuthStatus/account/read sequence; no completed credential is retained.
+    A live process may cache auth in memory, so it is retired whenever it could be stale:
+    the native file store or config changed, it emitted any unsolicited message while
+    idle, it broke, or it aged out. When auth.json cannot be stat'ed (e.g. keyring store)
+    every lookup uses its own process, as before.
+    """
+    global _session
+    from .native_rpc import Session, NativeRpcError
+    with _session_lock:
+        while True:
+            state=_store_state()
+            session, reused = _session, True
+            if session is not None and (session.closed or session.broken.is_set() or session.proc.poll() is not None
+                                        or not session.inbox.empty() or state is None or session.store_state != state
+                                        or time.monotonic()-session.started>SESSION_MAX_AGE):
+                _session=None
+                session.close()
+                session=None
+            if session is None:
+                session, reused = Session(deadline), False
+                session.store_state=state
+                if state is not None:
+                    _session=session
+            session.deadline=deadline
+            try:
+                value=session.credential(deadline)
+                if reused and _store_state()!=state:
+                    _session=None  # store changed during the read; answer from a fresh process
+                    continue
+                return value
+            except BaseException as error:
+                _session=None
+                session.close()
+                # A long-lived peer may fail where a fresh one would not; retry that case once.
+                if not (reused and isinstance(error, NativeRpcError)):
+                    raise
+            finally:
+                if _session is not session:
+                    session.close()
+
+
 def _native_login(timeout, *, refresh=False, expected_generation=None, expected_account=None):
-    """Read managed access + authoritative native workspace routing, without any turn."""
+    """Read managed access + authoritative native workspace routing, without any turn.
+
+    Refresh uses its own short-lived process, then retires the shared one so the next
+    lookup observes the rotated native store.
+    """
     from .native_rpc import Session, NativeRpcError
     deadline=time.monotonic()+timeout
     session=None
     try:
-        session=Session(deadline)
-        value=session.credential(deadline, force_refresh=refresh,
-                                 expected_generation=expected_generation, expected_account=expected_account)
-        generation=value.generation
-        return value.access_token,value.account_id,generation
+        if not refresh:
+            value=_shared_credential(deadline)
+        else:
+            session=Session(deadline)
+            value=session.credential(deadline, force_refresh=refresh,
+                                     expected_generation=expected_generation, expected_account=expected_account)
+        return value.access_token,value.account_id,value.generation
     except NativeRpcError as error:
         if error.code=='native_login_required':raise CodexLoginRequired(error.message) from None
         raise NativeAuthStateError(error.message, code=error.code, status=error.status) from None
     finally:
-        if session is not None:session.close()
+        if session is not None:
+            session.close()
+            _drop_session()
+
+
+atexit.register(_drop_session)
 
 
 _lookup_lock=threading.Lock()

@@ -2,6 +2,7 @@
 import io
 import json
 import os
+import queue
 import threading
 import time
 import unittest
@@ -42,6 +43,7 @@ class NativeManager(unittest.TestCase):
         with patch.object(native.subprocess,'Popen',return_value=proc) as launch,patch.object(native.shutil,'which',return_value='/fixture/codex'),patch.dict(os.environ,{'CODEX_HOME':'/fixture/native-codex','OPENAI_API_KEY':'fixture-paid-key'}):
             try:return auth._native_login(timeout)
             finally:
+                auth._drop_session()  # lookups share one live native process; retire it to check cleanup
                 self.assertEqual(launch.call_args.args[0],['/fixture/codex','-c','model_provider="openai"','app-server'])
                 self.assertEqual(launch.call_args.kwargs['env']['CODEX_HOME'],'/fixture/native-codex')
                 self.assertNotIn('OPENAI_API_KEY',launch.call_args.kwargs['env'])
@@ -134,3 +136,100 @@ class NativeLookup(unittest.TestCase):
             with auth._lookup_lock:flight=next(iter(auth._lookups.values()))
             finish.set();self.assertTrue(flight['event'].wait(1))
         self.assertEqual(auth._lookups,{})
+
+
+class SharedNativeSession(unittest.TestCase):
+    """One live app-server serves successive lookups while the native store is unchanged."""
+    def setUp(self):
+        auth._drop_session()
+        self.spawned=[];self.state=('home',(1,10,100),None)
+        test=self
+        class Fake:
+            def __init__(self,deadline):
+                self.closed=False;self.broken=threading.Event();self.proc=MagicMock();self.proc.poll.return_value=None
+                self.inbox=queue.Queue();self.started=time.monotonic();self.fail=None;self.calls=0;self.during=None
+                test.spawned.append(self)
+            def credential(self,deadline,**kwargs):
+                self.calls+=1
+                if self.fail:raise self.fail
+                if self.during:self.during();self.during=None
+                return native.Credential(token(),'native-workspace','https://chatgpt.com')
+            def close(self):self.closed=True
+        self.patches=[patch.object(native,'Session',Fake),patch.object(auth,'_store_state',lambda:self.state)]
+        for p in self.patches:p.start()
+    def tearDown(self):
+        auth._drop_session()
+        for p in self.patches:p.stop()
+
+    def test_successive_lookups_reuse_one_process(self):
+        for _ in range(3):self.assertEqual(auth._native_login(1)[1],'native-workspace')
+        self.assertEqual(len(self.spawned),1);self.assertEqual(self.spawned[0].calls,3)
+        self.assertFalse(self.spawned[0].closed)
+
+    def test_broken_or_aged_process_is_replaced(self):
+        auth._native_login(1);self.spawned[0].broken.set()
+        auth._native_login(1);self.assertEqual(len(self.spawned),2);self.assertTrue(self.spawned[0].closed)
+        self.spawned[1].started-=auth.SESSION_MAX_AGE+1
+        auth._native_login(1);self.assertEqual(len(self.spawned),3);self.assertTrue(self.spawned[1].closed)
+
+    def test_store_change_login_logout_rotation_or_config_retires_process(self):
+        auth._native_login(1)
+        for changed in (('home',(1,11,100),None),('home',(2,11,100),None),('home',(2,11,100),(5,1,1)),('other',(2,11,100),(5,1,1))):
+            with self.subTest(state=changed):
+                self.state=changed;n=len(self.spawned)
+                auth._native_login(1)
+                self.assertEqual(len(self.spawned),n+1);self.assertTrue(self.spawned[-2].closed)
+
+    def test_store_change_during_reused_read_is_answered_by_fresh_process(self):
+        auth._native_login(1)
+        def rotate():self.state=('home',(1,99,100),None)
+        self.spawned[0].during=rotate
+        auth._native_login(1)
+        self.assertEqual(len(self.spawned),2);self.assertTrue(self.spawned[0].closed)
+        self.assertEqual(self.spawned[1].calls,1);self.assertIs(auth._session,self.spawned[1])
+
+    def test_unobservable_store_uses_one_process_per_lookup(self):
+        self.state=None
+        auth._native_login(1);auth._native_login(1)
+        self.assertEqual(len(self.spawned),2);self.assertTrue(all(s.closed for s in self.spawned))
+        self.assertIsNone(auth._session)
+
+    def test_unsolicited_idle_message_retires_process(self):
+        auth._native_login(1);self.spawned[0].inbox.put(b'{"method":"account/updated"}\n')
+        auth._native_login(1)
+        self.assertEqual(len(self.spawned),2);self.assertTrue(self.spawned[0].closed)
+
+    def test_reused_process_fault_retries_once_on_fresh_process(self):
+        auth._native_login(1);self.spawned[0].fail=native.NativeRpcError('native_auth_channel','ended',502)
+        self.assertEqual(auth._native_login(1)[1],'native-workspace')
+        self.assertEqual(len(self.spawned),2);self.assertTrue(self.spawned[0].closed)
+
+    def test_fresh_process_fault_is_not_retried(self):
+        original=native.Session
+        def failing(deadline):
+            session=original(deadline);session.fail=native.NativeRpcError('native_login_required','absent');return session
+        with patch.object(native,'Session',side_effect=failing),self.assertRaises(auth.CodexLoginRequired):auth._native_login(1)
+        self.assertEqual(len(self.spawned),1);self.assertTrue(self.spawned[0].closed);self.assertIsNone(auth._session)
+
+    def test_refresh_uses_own_process_and_retires_shared(self):
+        auth._native_login(1);shared=self.spawned[0]
+        auth._native_login(1,refresh=True)
+        self.assertEqual(len(self.spawned),2);self.assertTrue(shared.closed and self.spawned[1].closed)
+        self.assertIsNone(auth._session)
+
+
+class NativeStoreState(unittest.TestCase):
+    def test_stat_only_identity_and_unobservable_store(self):
+        import builtins, tempfile
+        from pathlib import Path
+        with tempfile.TemporaryDirectory() as home, patch.dict(os.environ,{'CODEX_HOME':home}):
+            self.assertIsNone(auth._store_state())  # no auth.json: keyring or absent login
+            Path(home,'auth.json').write_text('{}')
+            with patch.object(builtins,'open',side_effect=AssertionError('contents must not be read')):
+                first=auth._store_state()
+            self.assertEqual(first[0],str(Path(home).resolve()));self.assertIsNone(first[2])
+            Path(home,'config.toml').write_text('')
+            second=auth._store_state();self.assertNotEqual(first,second)
+            os.utime(Path(home,'auth.json'),ns=(1,1))
+            self.assertNotEqual(second,auth._store_state())
+            with patch.object(auth.os,'stat',side_effect=PermissionError):self.assertIsNone(auth._store_state())
