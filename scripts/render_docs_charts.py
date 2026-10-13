@@ -59,8 +59,7 @@ def architecture():
 
 def comparison(data):
     rows = {k: data['datasets'][k] for k, _, _ in SUITES}
-    live = data['luna_010_measurement']['by_suite']  # current-build Luna p50; Jev p50 stays the published historical value
-    ms = {(k, 'luna'): live[k]['p50_ms'] for k, _, _ in SUITES} | {(k, 'jev'): rows[k]['jev']['p50_ms'] for k, _, _ in SUITES}
+    ms = {(k, side): rows[k][side]['p50_ms'] for k, _, _ in SUITES for side in ('luna', 'jev')}
     gaps = [abs(r['luna']['accuracy'] - r['jev']['accuracy']) for r in rows.values()]
     if max(gaps) > 0.02 or any(r['luna']['brier'] <= r['jev']['brier'] for r in rows.values()) or any(ms[k, 'luna'] <= ms[k, 'jev'] for k in rows):
         sys.exit('comparison-data.json no longer supports the chart headline; rewrite the message')
@@ -89,7 +88,7 @@ def comparison(data):
                   bar(c3, yy, 80 * d['brier'] / brier, side), text(c3 + 80 * d['brier'] / brier + 6, ty, f'{d["brier"]:.3f}', 's')]
         g += [f'<line x1="{c}" y1="{y - 4}" x2="{c}" y2="{y + 40}" class="ln"/>' for c in (c1, c2, c3)]
     g += [f'<line x1="16" y1="286" x2="744" y2="286" class="ln"/>',
-          text(16, 310, f'Accuracy, Brier: 460 public tasks. Luna latency: 0.1.0 build, {min(v["n"] for v in live.values())}–{max(v["n"] for v in live.values())} cases per suite.', 'm s')]
+          text(16, 310, 'Accuracy, Brier and latency: 460 public tasks.', 'm s')]
     return svg(760, 322, title,
                'Luna and native Jev correct rates, median latency and Brier score on risk, toxicity and tool selection.',
                '\n'.join(g))

@@ -14,7 +14,6 @@ Open-source cleanup and a Python 3.10 fix.
 - Removed the root compatibility shims `decide_d.py`, `subscription_auth.py` and `jev_luna.py`. Import `jev_luna.core` and `jev_luna.subscription_auth` instead; the `jev-luna` command and `python -m jev_luna` are unchanged.
 - Renamed release-round test files to subject names.
 - Removed the `jev-layer` adapter profile and `jev-layer.patch`: it targeted a locally modified Jev client with no upstream commit. The pinned `jev-upstream` and `codex-selector` profiles are unchanged. This changes the runtime build hash.
-- Latency re-measured on 0.1.0 (38 public cases, default effort `none`: p50 3.0 s, p95 6.2 s) with a reasoning-effort comparison; see [docs/COMPARISON.md](docs/COMPARISON.md#reasoning-effort).
 
 ## 0.1.0 — 2026-10-13
 

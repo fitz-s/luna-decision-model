@@ -2,7 +2,7 @@
   "schema_version": 1,
   "checked_at_utc": "2026-10-13",
   "product_version": "0.1.0",
-  "scope": "Historical public-460 same-question summaries plus a small current-build measurement of 0.1.0 (`luna_010_measurement`); not a paired route/machine/time benchmark.",
+  "scope": "Historical public-460 same-question summaries, not current 0.1.0 inference acceptance or a paired route/machine/time benchmark.",
   "metric_source": {
     "review_bundle_path": "evidence/acceptance-20261011/public-460-metrics.json",
     "sha256": "e9004286e8715751376effd893b6a2b58346bf77fa28fabbac5781fc3582a84c",
@@ -11,7 +11,7 @@
   "conditions": {
     "luna": "Archived first public-460 Luna summary, ordinary Codex OAuth Responses. Runner config sets four concurrent client workers; actual concurrency, run start, build and per-request traces unavailable.",
     "jev": "Published historical TypeSafe cloud results. Risk requested alias jev-latest, not an immutable served checkpoint; toxicity/tool_select returned jev-1.13.0. Separate clients, machines, dates and inference routes.",
-    "latency": "Observed end-to-end request wall time, including network. The 0.1.0 measurement is in `luna_010_measurement`. No paired speed ratio, SLA or inference-only time.",
+    "latency": "Observed end-to-end request wall time, including network. No paired speed ratio, SLA, inference-only time or 0.1.0 measurement.",
     "accuracy": "Original gold and case IDs; all planned requests in each denominator. Tool selection scores function choice, not generated arguments.",
     "probability": "Brier uses complete vectors: binary squared error versus multiclass sum, never pooled. Max-p ECE differs from public Choice confidence. No calibration certification.",
     "provenance_gap": "Original run.json and per-request traces are unavailable in the retained evidence. Only derived summary, frozen input/source manifests and runner/scorer are available. These are not freshly reconstructed raw inference results."
@@ -542,84 +542,5 @@
         ]
       }
     ]
-  },
-  "luna_010_measurement": {
-    "build_sha256": "dd3ba7401fa8505b5d1d6ad4e639a5fa6bf12da96bd9a704a99d90610208b650",
-    "date": "2026-10-13",
-    "endpoint": "/v1/systemone",
-    "concurrency": 1,
-    "sample": "Real public-460 cases sent one at a time to an own instance of the 0.1.0 build: 38 per explicit effort (12 risk, 13 toxicity, 13 tool_select); the default row is 20 of those cases under the shipped policy with no effort override. 0 errors, 0 cached input tokens. Not paired with the archived runs.",
-    "default_policy": "effort none for inputs < 8192 bytes (all public inputs)",
-    "by_effort": {
-      "none": {
-        "n": 38,
-        "p50_ms": 3000.3,
-        "p95_ms": 6166.6,
-        "upstream_ms_p50": 2324.8,
-        "correct": 34,
-        "accuracy": 0.8947,
-        "mean_input_tokens": 623.6,
-        "mean_output_tokens": 25.9,
-        "mean_reasoning_tokens": 0,
-        "api_usd_per_1000": 0.0753,
-        "credits_per_1000": 1.8824
-      },
-      "low": {
-        "n": 38,
-        "p50_ms": 2607.1,
-        "p95_ms": 3967.1,
-        "upstream_ms_p50": 2118.9,
-        "correct": 36,
-        "accuracy": 0.9474,
-        "mean_input_tokens": 623.6,
-        "mean_output_tokens": 25.9,
-        "mean_reasoning_tokens": 0,
-        "api_usd_per_1000": 0.0753,
-        "credits_per_1000": 1.8824
-      },
-      "medium": {
-        "n": 38,
-        "p50_ms": 3556.0,
-        "p95_ms": 7139.8,
-        "upstream_ms_p50": 3135.5,
-        "correct": 36,
-        "accuracy": 0.9474,
-        "mean_input_tokens": 623.6,
-        "mean_output_tokens": 45.2,
-        "mean_reasoning_tokens": 18.7,
-        "api_usd_per_1000": 0.085,
-        "credits_per_1000": 2.1239
-      },
-      "default": {
-        "n": 20,
-        "p50_ms": 2147.5,
-        "p95_ms": 5390.5,
-        "upstream_ms_p50": 1762.3,
-        "correct": 20,
-        "accuracy": 1.0,
-        "mean_input_tokens": 631.8,
-        "mean_output_tokens": 26.1,
-        "mean_reasoning_tokens": 0,
-        "api_usd_per_1000": 0.0762,
-        "credits_per_1000": 1.9051
-      }
-    },
-    "by_suite": {
-      "risk": {
-        "n": 12,
-        "effort": "none",
-        "p50_ms": 3286.9
-      },
-      "toxicity": {
-        "n": 13,
-        "effort": "none",
-        "p50_ms": 3286.4
-      },
-      "tool_select": {
-        "n": 13,
-        "effort": "none",
-        "p50_ms": 2542.9
-      }
-    }
   }
 }

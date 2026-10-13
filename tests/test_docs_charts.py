@@ -36,10 +36,9 @@ class DocsChartsTest(unittest.TestCase):
                 self.assertIn(f'{d["correct"]}/{d["n"]}', svg)
                 self.assertIn(f'{d["brier"]:.3f}', svg)
             self.assertIn(f'{kind} Brier', svg)
-            self.assertIn(f'{data["luna_010_measurement"]["by_suite"][suite]["p50_ms"] / 1000:.2f} s', svg)
-            self.assertIn(f'{data["datasets"][suite]["jev"]["p50_ms"] / 1000:.2f} s', svg)
-            self.assertNotIn(f'{data["datasets"][suite]["luna"]["p50_ms"] / 1000:.2f} s', svg)
-        for s in ('3.29 s', '2.54 s', 'Accuracy, Brier: 460 public tasks. Luna latency: 0.1.0 build, 12–13 cases per suite.'):
+            for side in ('luna', 'jev'):
+                self.assertIn(f'{data["datasets"][suite][side]["p50_ms"] / 1000:.2f} s', svg)
+        for s in ('1.20 s', '1.09 s', '1.12 s', 'Accuracy, Brier and latency: 460 public tasks.'):
             self.assertIn(s, svg)
         self.assertNotIn('slower', svg)
         self.assertNotIn('×', svg)
