@@ -35,13 +35,55 @@ class DocsChartsTest(unittest.TestCase):
                 d = data['datasets'][suite][side]
                 self.assertIn(f'{d["correct"]}/{d["n"]}', svg)
                 self.assertIn(f'{d["brier"]:.3f}', svg)
+                self.assertIn(f'{d["p50_ms"] / 1000:.2f} s', svg)
             self.assertIn(f'{kind} Brier', svg)
-            for side in ('luna', 'jev'):
-                self.assertIn(f'{data["datasets"][suite][side]["p50_ms"] / 1000:.2f} s', svg)
-        for s in ('1.20 s', '1.09 s', '1.12 s', 'Accuracy, Brier and latency: 460 public tasks.'):
+        for s in ('1.20 s', '1.09 s', '1.12 s', 'A: accuracy, Brier and latency on 460 public tasks.', charts.TITLE,
+                  'Jev (native)', 'GPT-6 Luna · Decisions API', 'GPT-6 Luna · this project'):
             self.assertIn(s, svg)
         self.assertNotIn('slower', svg)
         self.assertNotIn('×', svg)
+
+    def test_decision_bench_panel_matches_data(self):
+        data = charts.json.loads(charts.DATA.read_text())
+        v4 = data['decision_bench_v4']
+        svg = charts.render()['public-comparison.svg']
+        self.assertEqual(v4['merge_commit'], '8d1563c8740600367172f4bffd2858f400bdd32d')
+        self.assertEqual(v4['rows'], 1071)
+        for key in ('jev', 'luna_decisions'):
+            o = v4['overall'][key]
+            self.assertEqual(o['rows'], v4['rows'])
+            self.assertAlmostEqual(o['accuracy'], o['correct'] / o['rows'])
+            for s in (f'{100 * o["accuracy"]:.1f}% · {o["correct"]}/{o["rows"]}', f'{o["brier"]:.3f}', f'{o["p50_ms"] / 1000:.2f} s'):
+                self.assertIn(s, svg)
+            for tid in ('AGT-1', 'SAF-2'):
+                t = v4['tasks'][tid][key]
+                self.assertAlmostEqual(t['accuracy'], t['correct'] / t['rows'])
+                self.assertIn(f'{100 * t["accuracy"]:.1f}% · {t["correct"]}/{t["rows"]}', svg)
+        self.assertEqual((v4['overall']['luna_decisions']['correct'], v4['overall']['luna_decisions']['rows']), (969, 1071))
+        for s in ('B · Same model through the Decisions API', 'Decision Bench v4', 'via OpenRouter', 'AGT-1', 'SAF-2',
+                  'Per-task latency and Brier are not published.', 'Brier is comparable within a panel only'):
+            self.assertIn(s, svg)
+
+    def test_title_claims_hold_in_data(self):
+        data = charts.json.loads(charts.DATA.read_text())
+        for r in (data['datasets'][k] for k in data['datasets']):
+            self.assertLessEqual(abs(r['luna']['accuracy'] - r['jev']['accuracy']), 0.02)
+            self.assertGreater(r['luna']['p50_ms'], r['jev']['p50_ms'])
+            self.assertLess(r['luna']['p50_ms'], 1500)
+        o = data['decision_bench_v4']['overall']
+        self.assertLessEqual(abs(o['luna_decisions']['accuracy'] - o['jev']['accuracy']), 0.02)
+        sub = data['pricing']['rates']['product_subscription']
+        self.assertIsNone(sub['input_per_million'])
+        self.assertIsNone(sub['output_per_million'])
+        self.assertIn('Jev-level accuracy', charts.TITLE)
+        self.assertIn('no per-request bill', charts.TITLE)
+        self.assertIn('~1 s per call', charts.TITLE)
+
+    def test_guard_rejects_unsupported_title(self):
+        data = charts.json.loads(charts.DATA.read_text())
+        data['datasets']['risk']['luna']['p50_ms'] = data['datasets']['risk']['jev']['p50_ms']
+        with self.assertRaises(SystemExit):
+            charts.comparison(data)
 
     def test_cost_numbers_match_computation(self):
         data = charts.json.loads(charts.DATA.read_text())
@@ -60,17 +102,9 @@ class DocsChartsTest(unittest.TestCase):
             self.assertIn(s, svg)
         self.assertIn(f'≈{credits:.1f} credits', svg)
 
-    def test_api_routes_numbers_match_data(self):
-        data = charts.json.loads(charts.DATA.read_text())
-        dec = data['api_routes']['decisions']
-        self.assertTrue(dec['vendor_claim'])
-        self.assertEqual(dec['input_per_million'], data['pricing']['rates']['openai_decisions']['input_per_million'])
-        _, _, usd, credits, _ = charts.cost_per_1000(data)
-        svg = charts.render()['api-routes.svg']
-        for s in (f'${usd["openai_decisions"]:.3f}', f'${usd["ordinary_luna_api_reference"]:.3f}', f'≈{credits:.1f} credits',
-                  f'≈{dec["speed_multiplier_vs_responses"]}× faster', dec['status'], 'OpenAI claim', 'Codex ChatGPT',
-                  'GPT-6 Luna three ways: metered API key, or your Codex login', "Speed is OpenAI's published claim, not measured here."):
-            self.assertIn(s, svg)
+    def test_removed_route_chart_stays_removed(self):
+        self.assertFalse((ROOT / 'docs/assets/api-routes.svg').exists())
+        self.assertNotIn('api-routes.svg', charts.render())
 
     def test_removed_baseline_chart_stays_removed(self):
         self.assertFalse((ROOT / 'docs/assets/baseline-development.svg').exists())

@@ -1,77 +1,131 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 760 322" role="img" aria-labelledby="t d">
-<title id="t">Similar accuracy, higher recorded latency, worse Brier</title>
-<desc id="d">Luna and native Jev correct rates, median latency and Brier score on risk, toxicity and tool selection.</desc>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 760 638" role="img" aria-labelledby="t d">
+<title id="t">LLM decision model: Jev-level accuracy, no per-request bill, ~1 s per call</title>
+<desc id="d">Jev, GPT-6 Luna through the Decisions API and through Luna Decision Model: accuracy, median latency and Brier score, plus cost.</desc>
 <style>
-:root{color-scheme:light dark;--ink:#1f2328;--mute:#59636e;--line:#d1d9e0;--luna:#2a78d6;--jev:#eb6834;--cloud:#0f6cbd;--api:#6e7781}
-@media (prefers-color-scheme:dark){:root{--ink:#e6edf3;--mute:#9198a1;--line:#3d444d;--luna:#3987e5;--jev:#d95926;--cloud:#58a6ff;--api:#8b949e}}
+:root{color-scheme:light dark;--ink:#1f2328;--mute:#59636e;--line:#d1d9e0;--luna:#2a78d6;--jev:#eb6834;--cloud:#0f6cbd;--api:#6e7781;--dec:#8250df}
+@media (prefers-color-scheme:dark){:root{--ink:#e6edf3;--mute:#9198a1;--line:#3d444d;--luna:#3987e5;--jev:#d95926;--cloud:#58a6ff;--api:#8b949e;--dec:#a371f7}}
 text{font:14px -apple-system,BlinkMacSystemFont,"Segoe UI",Helvetica,Arial,sans-serif;fill:var(--ink)}
 .m{fill:var(--mute)}.s{font-size:13px}.b{font-weight:600}.h{font-size:19px;font-weight:700}.c{text-anchor:middle}
-.api{fill:var(--api)}.tag{fill:none;stroke:var(--mute);stroke-width:1.2}.pill{fill:none;stroke:var(--luna);stroke-width:2}.luna{fill:var(--luna)}.jev{fill:var(--jev)}.ln{stroke:var(--line);stroke-width:1;fill:none}
+.api{fill:var(--api)}.dec{fill:var(--dec)}.pill{fill:none;stroke:var(--luna);stroke-width:2}.luna{fill:var(--luna)}.jev{fill:var(--jev)}.ln{stroke:var(--line);stroke-width:1;fill:none}
 .box{fill:none;stroke:var(--line);stroke-width:1.5}.cloud{fill:none;stroke:var(--cloud);stroke-width:2}
 .ar{stroke:var(--mute);stroke-width:1.8;fill:none}.arh{fill:var(--mute)}
 </style>
-<text x="16" y="28" class="h">Similar accuracy, higher recorded latency, worse Brier</text>
-<rect x="16" y="46" width="12" height="12" rx="2" class="luna"/>
-<text x="34" y="57" class="s">Luna Decision Model (GPT-6 Luna)</text>
-<rect x="262" y="46" width="12" height="12" rx="2" class="jev"/>
-<text x="280" y="57" class="s">Native Jev (TypeSafe cloud)</text>
-<text x="128" y="92" class="m s b">Correct answers</text>
-<text x="350" y="92" class="m s b">Median latency (p50)</text>
-<text x="605" y="92" class="m s b">Brier (lower is better)</text>
-<line x1="16" y1="100" x2="744" y2="100" class="ln"/>
-<text x="16" y="125" class="b">Risk</text>
-<text x="16" y="143" class="m s">multiclass Brier</text>
-<rect x="128" y="108" width="82.5" height="14" rx="2" class="luna"/>
-<text x="216.5" y="119" class="s">91.7% · 55/60</text>
-<rect x="350" y="108" width="90.0" height="14" rx="2" class="luna"/>
-<text x="446.0" y="119" class="s">1.20 s</text>
-<rect x="605" y="108" width="79.9" height="14" rx="2" class="luna"/>
-<text x="690.8916622901913" y="119" class="s">0.164</text>
-<rect x="128" y="130" width="82.5" height="14" rx="2" class="jev"/>
-<text x="216.5" y="141" class="s">91.7% · 55/60</text>
-<rect x="350" y="130" width="31.6" height="14" rx="2" class="jev"/>
-<text x="387.62573980595266" y="141" class="s">0.42 s</text>
-<rect x="605" y="130" width="56.7" height="14" rx="2" class="jev"/>
-<text x="667.6549035516067" y="141" class="s">0.116</text>
-<line x1="128" y1="104" x2="128" y2="148" class="ln"/>
-<line x1="350" y1="104" x2="350" y2="148" class="ln"/>
-<line x1="605" y1="104" x2="605" y2="148" class="ln"/>
-<line x1="16" y1="162" x2="744" y2="162" class="ln"/>
-<text x="16" y="187" class="b">Toxicity</text>
-<text x="16" y="205" class="m s">binary Brier</text>
-<rect x="128" y="170" width="72.0" height="14" rx="2" class="luna"/>
-<text x="206.0" y="181" class="s">80.0% · 160/200</text>
-<rect x="350" y="170" width="82.0" height="14" rx="2" class="luna"/>
-<text x="438.007254983495" y="181" class="s">1.09 s</text>
-<rect x="605" y="170" width="80.0" height="14" rx="2" class="luna"/>
-<text x="691.0" y="181" class="s">0.164</text>
-<rect x="128" y="192" width="70.7" height="14" rx="2" class="jev"/>
-<text x="204.65" y="203" class="s">78.5% · 157/200</text>
-<rect x="350" y="192" width="11.4" height="14" rx="2" class="jev"/>
-<text x="367.357291987021" y="203" class="s">0.15 s</text>
-<rect x="605" y="192" width="72.9" height="14" rx="2" class="jev"/>
-<text x="683.9326147361229" y="203" class="s">0.149</text>
-<line x1="128" y1="166" x2="128" y2="210" class="ln"/>
-<line x1="350" y1="166" x2="350" y2="210" class="ln"/>
-<line x1="605" y1="166" x2="605" y2="210" class="ln"/>
-<line x1="16" y1="224" x2="744" y2="224" class="ln"/>
-<text x="16" y="249" class="b">Tool selection</text>
-<text x="16" y="267" class="m s">multiclass Brier</text>
-<rect x="128" y="232" width="89.1" height="14" rx="2" class="luna"/>
-<text x="223.1" y="243" class="s">99.0% · 198/200</text>
-<rect x="350" y="232" width="83.9" height="14" rx="2" class="luna"/>
-<text x="439.87973002854375" y="243" class="s">1.12 s</text>
-<rect x="605" y="232" width="7.6" height="14" rx="2" class="luna"/>
-<text x="618.5860129702389" y="243" class="s">0.016</text>
-<rect x="128" y="254" width="89.5" height="14" rx="2" class="jev"/>
-<text x="223.55" y="265" class="s">99.5% · 199/200</text>
-<rect x="350" y="254" width="11.1" height="14" rx="2" class="jev"/>
-<text x="367.0959240833206" y="265" class="s">0.15 s</text>
-<rect x="605" y="254" width="2.3" height="14" rx="2" class="jev"/>
-<text x="613.3073192602963" y="265" class="s">0.005</text>
-<line x1="128" y1="228" x2="128" y2="272" class="ln"/>
-<line x1="350" y1="228" x2="350" y2="272" class="ln"/>
-<line x1="605" y1="228" x2="605" y2="272" class="ln"/>
-<line x1="16" y1="286" x2="744" y2="286" class="ln"/>
-<text x="16" y="310" class="m s">Accuracy, Brier and latency: 460 public tasks.</text>
+<text x="16" y="28" class="h">LLM decision model: Jev-level accuracy, no per-request bill, ~1 s per call</text>
+<rect x="16" y="46" width="12" height="12" rx="2" class="jev"/>
+<text x="34" y="57" class="s">Jev (native)</text>
+<rect x="156" y="46" width="12" height="12" rx="2" class="dec"/>
+<text x="174" y="57" class="s">GPT-6 Luna · Decisions API</text>
+<rect x="368" y="46" width="12" height="12" rx="2" class="luna"/>
+<text x="386" y="57" class="s">GPT-6 Luna · this project</text>
+<text x="16" y="92" class="b">A · Our 460 public tasks: Jev vs this project</text>
+<text x="140" y="114" class="m s b">Correct answers</text>
+<text x="350" y="114" class="m s b">Median latency (p50)</text>
+<text x="605" y="114" class="m s b">Brier (lower is better)</text>
+<line x1="16" y1="120" x2="744" y2="120" class="ln"/>
+<text x="16" y="143" class="b">Risk</text>
+<text x="16" y="161" class="m s">multiclass Brier</text>
+<rect x="140" y="128" width="77.0" height="14" rx="2" class="jev"/>
+<text x="223.0" y="139" class="s">91.7% · 55/60</text>
+<rect x="350" y="128" width="31.6" height="14" rx="2" class="jev"/>
+<text x="387.62573980595266" y="139" class="s">0.42 s</text>
+<rect x="605" y="128" width="56.7" height="14" rx="2" class="jev"/>
+<text x="667.6549035516067" y="139" class="s">0.116</text>
+<rect x="140" y="150" width="77.0" height="14" rx="2" class="luna"/>
+<text x="223.0" y="161" class="s">91.7% · 55/60</text>
+<rect x="350" y="150" width="90.0" height="14" rx="2" class="luna"/>
+<text x="446.0" y="161" class="s">1.20 s</text>
+<rect x="605" y="150" width="79.9" height="14" rx="2" class="luna"/>
+<text x="690.8916622901913" y="161" class="s">0.164</text>
+<line x1="140" y1="124" x2="140" y2="166" class="ln"/>
+<line x1="350" y1="124" x2="350" y2="166" class="ln"/>
+<line x1="605" y1="124" x2="605" y2="166" class="ln"/>
+<line x1="16" y1="180" x2="744" y2="180" class="ln"/>
+<text x="16" y="203" class="b">Toxicity</text>
+<text x="16" y="221" class="m s">binary Brier</text>
+<rect x="140" y="188" width="65.9" height="14" rx="2" class="jev"/>
+<text x="211.94" y="199" class="s">78.5% · 157/200</text>
+<rect x="350" y="188" width="11.4" height="14" rx="2" class="jev"/>
+<text x="367.357291987021" y="199" class="s">0.15 s</text>
+<rect x="605" y="188" width="72.9" height="14" rx="2" class="jev"/>
+<text x="683.9326147361229" y="199" class="s">0.149</text>
+<rect x="140" y="210" width="67.2" height="14" rx="2" class="luna"/>
+<text x="213.2" y="221" class="s">80.0% · 160/200</text>
+<rect x="350" y="210" width="82.0" height="14" rx="2" class="luna"/>
+<text x="438.007254983495" y="221" class="s">1.09 s</text>
+<rect x="605" y="210" width="80.0" height="14" rx="2" class="luna"/>
+<text x="691.0" y="221" class="s">0.164</text>
+<line x1="140" y1="184" x2="140" y2="226" class="ln"/>
+<line x1="350" y1="184" x2="350" y2="226" class="ln"/>
+<line x1="605" y1="184" x2="605" y2="226" class="ln"/>
+<line x1="16" y1="240" x2="744" y2="240" class="ln"/>
+<text x="16" y="263" class="b">Tool selection</text>
+<text x="16" y="281" class="m s">multiclass Brier</text>
+<rect x="140" y="248" width="83.6" height="14" rx="2" class="jev"/>
+<text x="229.57999999999998" y="259" class="s">99.5% · 199/200</text>
+<rect x="350" y="248" width="11.1" height="14" rx="2" class="jev"/>
+<text x="367.0959240833206" y="259" class="s">0.15 s</text>
+<rect x="605" y="248" width="2.3" height="14" rx="2" class="jev"/>
+<text x="613.3073192602963" y="259" class="s">0.005</text>
+<rect x="140" y="270" width="83.2" height="14" rx="2" class="luna"/>
+<text x="229.16" y="281" class="s">99.0% · 198/200</text>
+<rect x="350" y="270" width="83.9" height="14" rx="2" class="luna"/>
+<text x="439.87973002854375" y="281" class="s">1.12 s</text>
+<rect x="605" y="270" width="7.6" height="14" rx="2" class="luna"/>
+<text x="618.5860129702389" y="281" class="s">0.016</text>
+<line x1="140" y1="244" x2="140" y2="286" class="ln"/>
+<line x1="350" y1="244" x2="350" y2="286" class="ln"/>
+<line x1="605" y1="244" x2="605" y2="286" class="ln"/>
+<line x1="16" y1="300" x2="744" y2="300" class="ln"/>
+<text x="16" y="326" class="b">B · Same model through the Decisions API: independent run, Decision Bench v4</text>
+<text x="16" y="344" class="m s">Jev vs Luna Decisions API on the same 1,071 rows.</text>
+<text x="140" y="368" class="m s b">Correct answers</text>
+<text x="350" y="368" class="m s b">Median latency (p50)</text>
+<text x="605" y="368" class="m s b">Brier (lower is better)</text>
+<line x1="16" y1="374" x2="744" y2="374" class="ln"/>
+<text x="16" y="397" class="b">All tasks</text>
+<text x="16" y="415" class="m s">1,071 rows</text>
+<rect x="140" y="382" width="77.6" height="14" rx="2" class="jev"/>
+<text x="223.64705882352942" y="393" class="s">92.4% · 990/1071</text>
+<rect x="350" y="382" width="32.9" height="14" rx="2" class="jev"/>
+<text x="388.89464600363965" y="393" class="s">0.44 s</text>
+<rect x="605" y="382" width="64.8" height="14" rx="2" class="jev"/>
+<text x="675.7571913096193" y="393" class="s">0.112</text>
+<rect x="140" y="404" width="76.0" height="14" rx="2" class="dec"/>
+<text x="222.0" y="415" class="s">90.5% · 969/1071</text>
+<rect x="350" y="404" width="24.4" height="14" rx="2" class="dec"/>
+<text x="380.4172892495604" y="415" class="s">0.33 s</text>
+<rect x="605" y="404" width="80.0" height="14" rx="2" class="dec"/>
+<text x="691.0" y="415" class="s">0.138</text>
+<line x1="140" y1="378" x2="140" y2="420" class="ln"/>
+<line x1="350" y1="378" x2="350" y2="420" class="ln"/>
+<line x1="605" y1="378" x2="605" y2="420" class="ln"/>
+<line x1="16" y1="434" x2="744" y2="434" class="ln"/>
+<text x="16" y="457" class="b">AGT-1</text>
+<text x="16" y="475" class="m s">Which tool to call</text>
+<rect x="140" y="442" width="81.7" height="14" rx="2" class="jev"/>
+<text x="227.66666666666669" y="453" class="s">97.2% · 35/36</text>
+<rect x="140" y="464" width="81.7" height="14" rx="2" class="dec"/>
+<text x="227.66666666666669" y="475" class="s">97.2% · 35/36</text>
+<line x1="140" y1="438" x2="140" y2="480" class="ln"/>
+<line x1="16" y1="486" x2="744" y2="486" class="ln"/>
+<text x="16" y="509" class="b">SAF-2</text>
+<text x="16" y="527" class="m s">Toxic comment</text>
+<rect x="140" y="494" width="81.2" height="14" rx="2" class="jev"/>
+<text x="227.2" y="505" class="s">96.7% · 29/30</text>
+<rect x="140" y="516" width="81.2" height="14" rx="2" class="dec"/>
+<text x="227.2" y="527" class="s">96.7% · 29/30</text>
+<line x1="140" y1="490" x2="140" y2="532" class="ln"/>
+<text x="350" y="468" class="m s">Per-task latency and Brier are not published.</text>
+<line x1="16" y1="538" x2="744" y2="538" class="ln"/>
+<text x="16" y="562" class="b">Per 1,000 requests</text>
+<rect x="176" y="551" width="12" height="12" rx="2" class="jev"/>
+<text x="194" y="562" class="s">Jev $0.026</text>
+<rect x="326" y="551" width="12" height="12" rx="2" class="dec"/>
+<text x="344" y="562" class="s">Decisions API $0.062</text>
+<rect x="536" y="551" width="12" height="12" rx="2" class="luna"/>
+<text x="554" y="562" class="s">This project ≈1.9 plan credits</text>
+<line x1="16" y1="574" x2="744" y2="574" class="ln"/>
+<text x="16" y="588" class="m s">A: accuracy, Brier and latency on 460 public tasks. Cost: rate cards at 618 input / 26 output tokens per request.</text>
+<text x="16" y="608" class="m s">B: Decision Bench v4, run 2026-10-08; Luna latency measured via OpenRouter.</text>
+<text x="16" y="628" class="m s">Brier is comparable within a panel only: A scores binary tasks as one squared error, B sums over all classes.</text>
 </svg>

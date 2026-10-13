@@ -27,6 +27,7 @@ The service sends existing Codex-managed ChatGPT OAuth to ordinary Codex Respons
 | [Pinned Jev application README](https://github.com/BorisLeMeec/jev/blob/e81c1d006b8b23a616486610f311039088521d0c/README.md#results) | “These tools save tokens, not time.” | Commit `e81c1d0`; the author's experiments, not rerun with Luna |
 | [Risk benchmark](https://github.com/themsquared/jev-benchmark/tree/42a9123a4ef42488aa775effdecb2f34a0d66a5a) | 55/60 correct, `jev-latest` | Author's historical cloud results; the alias is not a fixed checkpoint |
 | [Decision benchmark](https://github.com/supreethbare/decision-model-bench/tree/f69fd43641ef756715e2238b36f0b40be36a3958) | Toxicity 157/200; tool selection 199/200 | Jev 1.13.0, September 2026; function choice only, not execution |
+| [Decision Bench v4](https://github.com/atlanai/decision-bench/tree/8d1563c8740600367172f4bffd2858f400bdd32d/results/bench-v4) | `gpt-6-luna-decisions` 969/1071, p50 326 ms; `jev-1.13` 990/1071, p50 439 ms | Commit `8d1563c`; Luna through the Decisions API via OpenRouter, not this project's route |
 
 The [comparison](COMPARISON.md) and [comparison-data.json](comparison-data.json) use these figures. Community quota reports are kept in [docs/internal/QUOTA_SOURCES.md](internal/QUOTA_SOURCES.md) and are not used as rates.
 

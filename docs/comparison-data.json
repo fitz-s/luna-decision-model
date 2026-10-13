@@ -543,18 +543,96 @@
       }
     ]
   },
-  "api_routes": {
-    "source_url": "https://developers.openai.com/api/docs/guides/decisions",
+  "decision_bench_v4": {
+    "repository": "https://github.com/atlanai/decision-bench",
+    "pull_request": "https://github.com/atlanai/decision-bench/pull/15",
+    "merge_commit": "8d1563c8740600367172f4bffd2858f400bdd32d",
     "fetched_at_utc": "2026-10-13",
-    "decisions": {
-      "status": "public beta",
-      "model": "gpt-6-luna",
-      "only_model": true,
-      "input_per_million": 0.1,
-      "output_or_cache_charges": false,
-      "speed_claim": "returns typed answers about 10x faster than the Responses API",
-      "speed_multiplier_vs_responses": 10,
-      "vendor_claim": true
-    }
+    "suite": "bench-v4",
+    "corpus_sha256": "3599baea0d9c7e4e3d86c8b06af96e6850edca037b334bbc6b4e1a0033021725",
+    "rows": 1071,
+    "scope": "Independent third-party run of the same model through the Decisions API, not our suites and not paired with the public-460 run. Latency is observed end-to-end time from the benchmark harness; the Luna Decisions run went through OpenRouter.",
+    "brier_definition": "Per row, sum over all classes of (p_class - 1[class is gold])^2, averaged over rows with a valid answer and probabilities, pooled over all 35 tasks (decision_bench/scoring.py at the harness commit). For binary tasks this is twice the single squared error used for binary suites in the public-460 data, so it is never plotted on the same axis.",
+    "brier_definition_source": "https://github.com/atlanai/decision-bench/blob/9cac8f8acd256512a4fec8ee499f97da7eea861c/decision_bench/scoring.py",
+    "sources": {
+      "luna_decisions": {
+        "model_id": "gpt-6-luna-decisions",
+        "api_model": "openai/gpt-6-luna-decisions",
+        "provider": "openrouter-decisions",
+        "harness_commit": "9cac8f8acd256512a4fec8ee499f97da7eea861c",
+        "run_completed_utc": "2026-10-08T16:33:12Z",
+        "scores_url": "https://raw.githubusercontent.com/atlanai/decision-bench/8d1563c8740600367172f4bffd2858f400bdd32d/results/bench-v4/gpt-6-luna-decisions/scores.json",
+        "scores_sha256": "5f36077296a0d9fda75c87f6ba65fec226c461efaeb7d1cc25be11bd0a35b866",
+        "readme_url": "https://raw.githubusercontent.com/atlanai/decision-bench/8d1563c8740600367172f4bffd2858f400bdd32d/results/bench-v4/gpt-6-luna-decisions/README.md"
+      },
+      "jev": {
+        "model_id": "jev-1.13",
+        "api_model": "jev-1.13.0",
+        "provider": "typesafe",
+        "harness_commit": "4b919ae6f2c97e69dfe05f378c495e8604df994e",
+        "harness_git_dirty": true,
+        "run_completed_utc": "2026-09-23T13:50:29Z",
+        "scores_url": "https://raw.githubusercontent.com/atlanai/decision-bench/8d1563c8740600367172f4bffd2858f400bdd32d/results/bench-v4/jev-1.13/scores.json",
+        "scores_sha256": "11b05411b3075909c2bf765ffb85d56a019883312ac36704fa6d44350b08a903",
+        "readme_url": "https://raw.githubusercontent.com/atlanai/decision-bench/8d1563c8740600367172f4bffd2858f400bdd32d/results/bench-v4/jev-1.13/README.md"
+      }
+    },
+    "overall": {
+      "jev": {
+        "rows": 1071,
+        "correct": 990,
+        "accuracy": 0.9243697478991597,
+        "wilson95": [
+          0.9069732206842946,
+          0.9387327884616112
+        ],
+        "brier": 0.1119507328231432,
+        "p50_ms": 438.5520829819143,
+        "p95_ms": 545.4284790030215
+      },
+      "luna_decisions": {
+        "rows": 1071,
+        "correct": 969,
+        "accuracy": 0.9047619047619048,
+        "wilson95": [
+          0.8857065548896963,
+          0.9209239290811513
+        ],
+        "brier": 0.13830214752567693,
+        "p50_ms": 325.5317920120433,
+        "p95_ms": 585.462145972997
+      }
+    },
+    "tasks": {
+      "AGT-1": {
+        "luna_decisions": {
+          "rows": 36,
+          "correct": 35,
+          "accuracy": 0.9722222222222222
+        },
+        "name": "Which tool to call",
+        "jev": {
+          "rows": 36,
+          "correct": 35,
+          "accuracy": 0.9722222222222222
+        },
+        "source_dataset": "BFCL"
+      },
+      "SAF-2": {
+        "luna_decisions": {
+          "rows": 30,
+          "correct": 29,
+          "accuracy": 0.9666666666666667
+        },
+        "name": "Toxic comment or not",
+        "jev": {
+          "rows": 30,
+          "correct": 29,
+          "accuracy": 0.9666666666666667
+        },
+        "source_dataset": "Civil Comments"
+      }
+    },
+    "per_task_latency_and_brier_published": false
   }
 }

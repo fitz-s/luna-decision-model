@@ -1,6 +1,6 @@
 # Luna compared with native Jev
 
-![Luna and native Jev: correct answers, median latency and Brier on three public suites.](assets/public-comparison.svg)
+![Jev, GPT-6 Luna through the Decisions API and through this project: accuracy, median latency and Brier on 460 public tasks and on Decision Bench v4, with cost per 1,000 requests.](assets/public-comparison.svg)
 
 | Suite | Correct: Luna / Jev | p50 latency: Luna / Jev | p95 latency: Luna / Jev | Brier (lower is better): Luna / Jev |
 | --- | --- | --- | --- | --- |
@@ -16,11 +16,23 @@ Provenance: Luna's correct counts, latency and Brier all come from the same arch
 
 Risk uses 60 author-labelled agent tool calls; toxicity binarizes Civil Comments crowd scores at 0.5; tool selection uses BFCL multiple-function selection gold (function choice only, not arguments or execution). Native Jev ran as `jev-latest` for risk and `jev-1.13.0` for the other two. Unrounded values, Wilson intervals, calibration bins and ECE: [comparison-data.json](comparison-data.json).
 
+## Same model through the Decisions API
+
+[Decision Bench v4](https://github.com/atlanai/decision-bench/pull/15) (merge commit `8d1563c`) ran Jev and `gpt-6-luna` through OpenAI's Decisions API on the same 1,071 rows. This project does not call the Decisions API (see [OPENAI_SOURCES.md](OPENAI_SOURCES.md)), so its numbers are not in this table, but the model is the same.
+
+| Decision Bench v4 | Jev 1.13 | GPT-6 Luna, Decisions API |
+| --- | --- | --- |
+| Correct, all 1,071 rows | 990 (92.4%) | 969 (90.5%) |
+| p50 / p95 latency | 439 / 545 ms | 326 / 585 ms |
+| Brier (lower is better) | 0.112 | 0.138 |
+| AGT-1, which tool to call (BFCL, 36 rows) | 35 / 36 | 35 / 36 |
+| SAF-2, toxic comment (Civil Comments, 30 rows) | 29 / 30 | 29 / 30 |
+
+Figures are from each model's published `scores.json` ([Jev](https://github.com/atlanai/decision-bench/blob/8d1563c8740600367172f4bffd2858f400bdd32d/results/bench-v4/jev-1.13/scores.json), [Luna](https://github.com/atlanai/decision-bench/blob/8d1563c8740600367172f4bffd2858f400bdd32d/results/bench-v4/gpt-6-luna-decisions/scores.json)); the benchmark does not publish per-task latency or Brier. The benchmark's Brier sums squared error over all classes for every task, so it differs from the binary Brier above and is not comparable with it. Luna's run (2026-10-08, harness `9cac8f8`) went through OpenRouter, and Jev's ran on 2026-09-23 with harness `4b919ae`. These are different datasets and an OpenRouter hop, not a paired comparison with the public-460 suites.
+
 ## Cost per 1,000 requests
 
 ![Per 1,000 requests: $0.026 to $0.075 on API rate cards, about 1.9 credits at GPT-6 Luna's credit rate.](assets/cost.svg)
-
-![GPT-6 Luna routes compared: OpenAI Decisions API and Responses API use API keys; Luna Decision Model uses your Codex login.](assets/api-routes.svg)
 
 At the token mix measured in the archived Luna run (284,370 input and 11,742 output tokens over 460 requests, about **618 input + 26 output tokens per request**):
 
@@ -42,6 +54,7 @@ Use it to reuse an existing Codex subscription and existing Jev callers. If late
 - Luna accuracy, latency and Brier: `acceptance-20261011/public-460-metrics.json` in the maintainer's local archive (not in the repository; SHA-256 recorded in [comparison-data.json](comparison-data.json)), produced by the retained `run_public.py` and `score_public.py` runners, which keep gold labels out of inference requests.
 - [Tool-call risk benchmark](https://github.com/themsquared/jev-benchmark/tree/42a9123a4ef42488aa775effdecb2f34a0d66a5a), commit `42a9123`, published September 2026.
 - [Toxicity and tool-selection benchmark](https://github.com/supreethbare/decision-model-bench/tree/f69fd43641ef756715e2238b36f0b40be36a3958), commit `f69fd43`, September 2026, one run with per-case predictions.
+- [Decision Bench v4](https://github.com/atlanai/decision-bench/tree/8d1563c8740600367172f4bffd2858f400bdd32d/results/bench-v4), commit `8d1563c` (pull request 15), October 2026; file hashes in [comparison-data.json](comparison-data.json).
 - Official OpenAI statements and prices: [OPENAI_SOURCES.md](OPENAI_SOURCES.md).
 
 ## Notes
