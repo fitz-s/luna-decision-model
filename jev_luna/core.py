@@ -196,6 +196,10 @@ READOUT_PROFILE = readout_profiles.validate_profile(os.environ.get("LDM_READOUT_
 SERVICE_TIER = os.environ.get("LDM_SERVICE_TIER", "default")
 if SERVICE_TIER not in ("default", "fast"):
     raise ValueError("LDM_SERVICE_TIER must be default or fast")
+# "auto" keeps the adaptive policy in build_upstream; an explicit effort applies to every request.
+REASONING_EFFORT = os.environ.get("LDM_REASONING_EFFORT", "auto")
+if REASONING_EFFORT not in ("auto", "none", "low", "medium", "high"):
+    raise ValueError("LDM_REASONING_EFFORT must be auto, none, low, medium or high")
 
 SYSTEM = ("You are a decision readout. Evaluate independent questions against shared evidence. For a yes/no question, "
           "give p_true between 0 and 1. For choice or score questions, give nonnegative relative likelihood weights for "
@@ -267,8 +271,9 @@ def build_upstream(state, qs):
         st = state if isinstance(state, str) else json.dumps(_metadata_first(state), ensure_ascii=False, separators=(",", ":"))
         messages = [{"role": "user", "content": [{"type": "input_text", "text": "STATE:\n" + st}]}]
     messages.append({"role": "user", "content": [{"type": "input_text", "text": "QUESTIONS:\n" + json.dumps(spec, ensure_ascii=False)}]})
-    effort = "medium" if (len(json.dumps(messages, ensure_ascii=False).encode()) > SHORT_INPUT_BYTES
-                        and any(q['kind'] != 'noul' for q in qs)) else "none"
+    if REASONING_EFFORT != "auto": effort = REASONING_EFFORT
+    else: effort = "medium" if (len(json.dumps(messages, ensure_ascii=False).encode()) > SHORT_INPUT_BYTES
+                                and any(q['kind'] != 'noul' for q in qs)) else "none"
     budget = min(32000, max(512, sum(64 if q["kind"] == "noul" else 32 + 16 * len(q["opts"]) for q in qs)))
     payload = {"model": MODEL, "max_output_tokens": budget, "reasoning": {"effort": effort}, "instructions": SYSTEM,
                "input": messages, "text": {"format": {"type": "json_schema", "name": "report", "strict": True, "schema": schema}},
@@ -837,8 +842,9 @@ class H(BaseHTTPRequestHandler):
             if health:
                 with _cache_lock: stats = {**_stats, "cache_entries": len(_cache), "inflight": _stats["active_calls"]}
                 return self._send(200, {"ok": True, "source_sha256": SOURCE_SHA256, "build_sha256": BUILD_SHA256, "transport": TRANSPORT, "model": MODEL,
-                    "beta": BETA, "backend": "luna-json-readout", "upstream_protocol": "responses-sse", "reasoning_effort": "adaptive",
-                    "reasoning_policy": {"short_input": "none", "long_vector_input": "medium", "predicate_only": "none", "short_input_bytes": SHORT_INPUT_BYTES},
+                    "beta": BETA, "backend": "luna-json-readout", "upstream_protocol": "responses-sse", "reasoning_effort": "adaptive" if REASONING_EFFORT == "auto" else REASONING_EFFORT,
+                    "reasoning_policy": {"short_input": "none", "long_vector_input": "medium", "predicate_only": "none", "short_input_bytes": SHORT_INPUT_BYTES,
+                                         "override": REASONING_EFFORT},
                     "readout_profile": READOUT_PROFILE, "service_tier": SERVICE_TIER, "probability_encoding": "complete-weights" if READOUT_PROFILE in ("baseline", "compact-weight-v1", "blocked-weight-v1", "keyed-weight-v1") else "complete-probability-estimates", "score_representation": "score-fields-v2", "native_decisions": False, "deadline_seconds": DEADLINE,
                     "cache_ttl_seconds": CACHE_TTL, "stats": stats, "local_auth_required": bool(getattr(self.server, "local_key", None))})
             if self.path.split("?")[0].rstrip("/") == "/v1/models":

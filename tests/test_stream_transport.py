@@ -112,6 +112,29 @@ class RequestMetadata(unittest.TestCase):
                 if ok: self.assertEqual(run.stdout.strip(), value)
                 else: self.assertIn("LDM_SERVICE_TIER must be default or fast", run.stderr)
 
+    def test_reasoning_effort_override_applies_to_every_request(self):
+        short = core.parse_systemone({"model": "jev-latest", "state": "s", "questions": {"q": {"type": "noul", "instructions": "x"}}})[1]
+        long_state = "x" * (core.SHORT_INPUT_BYTES + 1)
+        choice = core.parse_systemone({"model": "jev-latest", "state": long_state,
+                                       "questions": {"q": {"type": "choice", "criteria": {"a": None, "b": None}}}})[1]
+        self.assertEqual(core.REASONING_EFFORT, "auto")
+        self.assertEqual(core.build_upstream("s", short)["reasoning"]["effort"], "none")
+        self.assertEqual(core.build_upstream(long_state, choice)["reasoning"]["effort"], "medium")
+        for value in ("none", "low", "medium", "high"):
+            with self.subTest(value=value), patch.object(core, "REASONING_EFFORT", value):
+                self.assertEqual(core.build_upstream("s", short)["reasoning"]["effort"], value)
+                self.assertEqual(core.build_upstream(long_state, choice)["reasoning"]["effort"], value)
+
+    def test_invalid_reasoning_effort_fails_at_startup(self):
+        for value, ok in (("auto", True), ("none", True), ("high", True), ("xhigh", False), ("minimal", False), ("", False)):
+            with self.subTest(value=value):
+                run = subprocess.run([sys.executable, "-c", "import jev_luna.core as c; print(c.REASONING_EFFORT)"],
+                                     env={**os.environ, "LDM_REASONING_EFFORT": value}, capture_output=True, text=True,
+                                     cwd=os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+                self.assertEqual(run.returncode == 0, ok, run.stderr)
+                if ok: self.assertEqual(run.stdout.strip(), value)
+                else: self.assertIn("LDM_REASONING_EFFORT must be auto, none, low, medium or high", run.stderr)
+
     def test_rejection_categories_do_not_echo_model_text(self):
         self.assertEqual(core._readout_reason(ValueError('likelihood weights need a positive total')), 'zero_mass')
         self.assertEqual(core._readout_reason(ValueError('secret text')), 'invalid_readout')

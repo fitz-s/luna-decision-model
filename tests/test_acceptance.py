@@ -89,6 +89,7 @@ class Acceptance(Base):
         self.assertFalse(health["native_decisions"])
         self.assertEqual(health["backend"], "luna-json-readout")
         self.assertNotIn("ready", health)
+        self.assertEqual((health["reasoning_effort"], health["reasoning_policy"]["override"]), ("adaptive", "auto"))
 
     def test_response_headers_and_usage_are_observable(self):
         Up.reply = lambda b: tool_reply({"q0": {"p_true": .9}})
