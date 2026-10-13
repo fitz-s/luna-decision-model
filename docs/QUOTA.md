@@ -49,6 +49,8 @@ Repeat across several batches to see variation. Record numbers only; never share
 | Pro | No five-hour limit currently; shared or weekly limits may apply |
 | [Fast mode](https://learn.chatgpt.com/docs/agent-configuration/speed#fast-mode) | 2.5× Standard against included use; 2× in paid credits |
 
+This service requests Fast mode only when started with `LDM_SERVICE_TIER=fast`, so measure Fast and default batches separately.
+
 ## Notes
 
 OpenAI states that credit prices do not determine included subscription use, so the credit rates do not convert into quota percent. Purchased credits after a limit are a separate billing basis; nothing here switches to credits or a paid API. The interval is a local planning estimate that covers display rounding only, not meter lag or background activity. The project has no quota measurements of its own; unverified community reports are listed in [docs/internal/QUOTA_SOURCES.md](internal/QUOTA_SOURCES.md) and are not used as a Luna rate.

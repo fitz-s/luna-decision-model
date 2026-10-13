@@ -39,6 +39,7 @@ LDM=.venv/bin/luna-decision
 
 $LDM start [--login] [--port N]   # agents: run in the background or have the user run it in their own terminal; checks Codex login, serves; never replaces an occupied port
 $LDM serve                        # foreground server without the login check
+LDM_SERVICE_TIER=fast $LDM start  # opt-in Codex Fast mode (service_tier "priority" + x-codex-routing-hint); 2.5x included use; unset/default sends no tier
 $LDM doctor                       # no model call: login + compares build of the service on :20141
 $LDM doctor --live                # SPENDS subscription: text, long text, inline image smokes
 echo '{"model":"gpt-6-luna","state":"...","questions":{"q":{"type":"noul","instructions":"..."}}}' | $LDM decide   # SPENDS; --protocol openai for /v1/decisions

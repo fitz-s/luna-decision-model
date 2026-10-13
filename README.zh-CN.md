@@ -42,7 +42,7 @@ python3 -m venv .venv
 .venv/bin/luna-decision start
 ```
 
-服务随即在当前终端运行于 `127.0.0.1:20141`；按 `Ctrl-C` 停止。
+服务随即在当前终端运行于 `127.0.0.1:20141`；按 `Ctrl-C` 停止。Codex Fast 模式可选：用 `LDM_SERVICE_TIER=fast .venv/bin/luna-decision start` 启动即可请求该模式，它按标准速率的 2.5 倍消耗内含额度（[详情](TECHNICAL_REFERENCE.md#environment-variables)）。
 
 **2. 检查**：在同一目录打开第二个终端：
 

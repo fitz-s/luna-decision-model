@@ -192,6 +192,10 @@ def parse_decisions(body):
 
 from . import readout_profiles
 READOUT_PROFILE = readout_profiles.validate_profile(os.environ.get("LDM_READOUT_PROFILE", "baseline"))
+# Codex Fast mode: config "fast" is sent as the Responses tier "priority" (codex-rs ServiceTier::Fast.request_value()).
+SERVICE_TIER = os.environ.get("LDM_SERVICE_TIER", "default")
+if SERVICE_TIER not in ("default", "fast"):
+    raise ValueError("LDM_SERVICE_TIER must be default or fast")
 
 SYSTEM = ("You are a decision readout. Evaluate independent questions against shared evidence. For a yes/no question, "
           "give p_true between 0 and 1. For choice or score questions, give nonnegative relative likelihood weights for "
@@ -270,6 +274,7 @@ def build_upstream(state, qs):
                "input": messages, "text": {"format": {"type": "json_schema", "name": "report", "strict": True, "schema": schema}},
                "store": False, "stream": True}
     if isinstance(state, DecisionInput) and state.safety_identifier is not None: payload["safety_identifier"] = state.safety_identifier
+    if SERVICE_TIER == "fast": payload["service_tier"] = "priority"
     return readout_profiles.apply(payload, qs, READOUT_PROFILE)
 
 
@@ -461,7 +466,7 @@ def _infer_batch(state, qs, deadline):
         context.event('compiled_batch', batch=attempt_batch.get(),
                       questions=[{'original_id': q['id'], 'readout_id': f'q{i}'} for i, q in enumerate(qs)],
                       question_count=len(qs), outcome_count=sum(len(q['opts']) for q in qs),
-                      reasoning_effort=payload['reasoning']['effort'], readout_profile=READOUT_PROFILE,
+                      reasoning_effort=payload['reasoning']['effort'], readout_profile=READOUT_PROFILE, service_tier=SERVICE_TIER,
                       wire_payload_sha256=hashlib.sha256(json.dumps(
                           {**{key: value for key, value in payload.items() if key != 'max_output_tokens'},
                            'model': 'gpt-6-luna'}, allow_nan=False).encode()).hexdigest(),
@@ -834,7 +839,7 @@ class H(BaseHTTPRequestHandler):
                 return self._send(200, {"ok": True, "source_sha256": SOURCE_SHA256, "build_sha256": BUILD_SHA256, "transport": TRANSPORT, "model": MODEL,
                     "beta": BETA, "backend": "luna-json-readout", "upstream_protocol": "responses-sse", "reasoning_effort": "adaptive",
                     "reasoning_policy": {"short_input": "none", "long_vector_input": "medium", "predicate_only": "none", "short_input_bytes": SHORT_INPUT_BYTES},
-                    "readout_profile": READOUT_PROFILE, "probability_encoding": "complete-weights" if READOUT_PROFILE in ("baseline", "compact-weight-v1", "blocked-weight-v1", "keyed-weight-v1") else "complete-probability-estimates", "score_representation": "score-fields-v2", "native_decisions": False, "deadline_seconds": DEADLINE,
+                    "readout_profile": READOUT_PROFILE, "service_tier": SERVICE_TIER, "probability_encoding": "complete-weights" if READOUT_PROFILE in ("baseline", "compact-weight-v1", "blocked-weight-v1", "keyed-weight-v1") else "complete-probability-estimates", "score_representation": "score-fields-v2", "native_decisions": False, "deadline_seconds": DEADLINE,
                     "cache_ttl_seconds": CACHE_TTL, "stats": stats, "local_auth_required": bool(getattr(self.server, "local_key", None))})
             if self.path.split("?")[0].rstrip("/") == "/v1/models":
                 model = MODEL.split("/")[-1]

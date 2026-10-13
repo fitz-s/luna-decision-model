@@ -1,5 +1,8 @@
 """Streaming transport: SSE framing, connection reuse and request metadata. Local fixtures only; no native auth or inference."""
 import json
+import os
+import subprocess
+import sys
 import threading
 import time
 import unittest
@@ -25,9 +28,10 @@ class Endpoint(BaseHTTPRequestHandler):
     chunked = False
     tail_gate = None
     def do_POST(self):
-        self.rfile.read(int(self.headers['Content-Length']))
+        raw = self.rfile.read(int(self.headers['Content-Length']))
         type(self).seen.append({"authorization": self.headers.get('Authorization'),
-                               "cookie": self.headers.get('Cookie'), "port": self.client_address[1]})
+                               "cookie": self.headers.get('Cookie'), "port": self.client_address[1],
+                               "routing_hint": self.headers.get('x-codex-routing-hint'), "body": json.loads(raw)})
         body, chunked, tail_gate = type(self).body, type(self).chunked, type(self).tail_gate
         tail = b': after terminal\n\n' if tail_gate is not None else b''
         self.send_response(200)
@@ -91,6 +95,23 @@ class RequestMetadata(unittest.TestCase):
                     transport.prepare({'transport':'subscription'},ctx)
             self.assertEqual(result.exception.status,409)
 
+    def test_fast_mode_is_opt_in_codex_priority_tier(self):
+        qs = core.parse_systemone({"model": "jev-latest", "state": "s", "questions": {"q": {"type": "noul", "instructions": "x"}}})[1]
+        self.assertEqual(core.SERVICE_TIER, "default")
+        self.assertNotIn("service_tier", core.build_upstream("s", qs))
+        with patch.object(core, "SERVICE_TIER", "fast"):
+            self.assertEqual(core.build_upstream("s", qs)["service_tier"], "priority")
+
+    def test_invalid_service_tier_fails_at_startup(self):
+        for value, ok in (("fast", True), ("default", True), ("priority", False), ("", False)):
+            with self.subTest(value=value):
+                run = subprocess.run([sys.executable, "-c", "import jev_luna.core as c; print(c.SERVICE_TIER)"],
+                                     env={**os.environ, "LDM_SERVICE_TIER": value}, capture_output=True, text=True,
+                                     cwd=os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+                self.assertEqual(run.returncode == 0, ok, run.stderr)
+                if ok: self.assertEqual(run.stdout.strip(), value)
+                else: self.assertIn("LDM_SERVICE_TIER must be default or fast", run.stderr)
+
     def test_rejection_categories_do_not_echo_model_text(self):
         self.assertEqual(core._readout_reason(ValueError('likelihood weights need a positive total')), 'zero_mass')
         self.assertEqual(core._readout_reason(ValueError('secret text')), 'invalid_readout')
@@ -106,11 +127,11 @@ class StreamingPool(unittest.TestCase):
         self.url = f'http://127.0.0.1:{self.server.server_port}/responses'
     def tearDown(self):
         self.client.close(); self.server.shutdown(); self.server.server_close(); self.thread.join(2)
-    def invoke(self, token):
+    def invoke(self, token, payload=None):
         events=[]
         ctx=RequestContext(time.monotonic()+3,observer=lambda name, fields: events.append((name,fields)))
         ctx.usage_merger=core.merge_usage;ctx.begin_attempt()
-        result=self.client.call(transport.Route(self.url,{'Authorization':'Bearer '+token}),{},ctx)
+        result=self.client.call(transport.Route(self.url,{'Authorization':'Bearer '+token}),payload or {},ctx)
         return result,events,ctx.snapshot()
     def test_reuse_keeps_fresh_headers_and_no_session_cookies(self):
         self.invoke('A')
@@ -121,6 +142,21 @@ class StreamingPool(unittest.TestCase):
         self.assertTrue(any(name=='connection_reused' for name,_ in events))
         self.assertEqual(accounting['unknown_usage_attempts'],0)
         self.assertEqual(accounting['observed_usage']['input_tokens'],10)
+    def test_service_tier_wire_and_returned_tier(self):
+        _, events, _ = self.invoke('A')
+        self.assertIsNone(Endpoint.seen[0]['routing_hint'])
+        self.assertNotIn('service_tier', Endpoint.seen[0]['body'])
+        self.assertIsNone(next(f for n, f in events if n == 'terminal_event')['service_tier'])
+        Endpoint.body = terminal().replace(b'"status": "completed"', b'"status": "completed", "service_tier": "priority"')
+        _, events, _ = self.invoke('A', {'model': 'gpt-6-luna', 'service_tier': 'priority'})
+        self.assertEqual(Endpoint.seen[1]['routing_hint'], 'model=gpt-6-luna;tier=priority')
+        self.assertEqual(Endpoint.seen[1]['body']['service_tier'], 'priority')
+        self.assertEqual(next(f for n, f in events if n == 'terminal_event')['service_tier'], 'priority')
+
+    def test_rejected_fast_request_is_not_retried_as_default(self):
+        error = transport.provider_error(400, {"error": {"code": "invalid_request_error", "param": "service_tier"}})
+        self.assertEqual((error.status, error.code, error.param, error.retryable), (400, "invalid_request_error", "service_tier", False))
+
     def test_budget_is_per_frame_not_per_network_chunk(self):
         event=b'data: '+json.dumps({'type':'response.created','padding':'x'*350}).encode()+b'\n\n'
         Endpoint.body=event+terminal()

@@ -3,7 +3,7 @@ import atexit
 import hashlib
 import asyncio
 import concurrent.futures
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from types import MappingProxyType
 import json
 import re
@@ -121,6 +121,12 @@ def provider_error(status, body=None, headers=None):
     if isinstance(container.get("usage"), dict):
         error.usage = container["usage"]
     return error
+
+
+def _tier(response):
+    """The tier the upstream reports serving, for traces only."""
+    tier = response.get("service_tier") if isinstance(response, dict) else None
+    return tier if isinstance(tier, str) and SAFE_CODE.fullmatch(tier) else None
 
 
 def _stream_failure(message, reason):
@@ -279,9 +285,9 @@ class Client:
                             raise _stream_failure("Conflicting completed output items", 'conflicting_output_item')
                         done_items[index] = item
                     if kind in ("response.completed", "response.done"):
-                        context.event('terminal_event', batch=attempt_batch.get(), kind=kind,
-                                      http_body_at_eof=response.content.at_eof())
                         completed = event.get("response")
+                        context.event('terminal_event', batch=attempt_batch.get(), kind=kind,
+                                      http_body_at_eof=response.content.at_eof(), service_tier=_tier(completed))
                         if not isinstance(completed, dict):
                             raise _stream_failure("Missing completed response object", 'missing_response_object')
                         try:
@@ -295,9 +301,9 @@ class Client:
                             raise
                         return completed, done_items, recorded
                     if kind in ("error", "response.failed", "response.incomplete"):
-                        context.event('terminal_event', batch=attempt_batch.get(), kind=kind,
-                                      http_body_at_eof=response.content.at_eof())
                         failed = event.get("response") if isinstance(event.get("response"), dict) else event
+                        context.event('terminal_event', batch=attempt_batch.get(), kind=kind,
+                                      http_body_at_eof=response.content.at_eof(), service_tier=_tier(failed))
                         if kind == "response.incomplete":
                             error = Reject(422, "incomplete_response", "Luna response was incomplete; no partial decision is accepted")
                             error.usage = failed.get("usage") or {}
@@ -321,6 +327,10 @@ class Client:
             raw = json.dumps(payload, allow_nan=False).encode("utf-8")
         except (ValueError, UnicodeError, RecursionError):
             raise Reject(422, "invalid_request", "Input cannot be encoded as strict JSON") from None
+        tier = payload.get("service_tier")
+        if tier is not None:
+            # Codex sends this hint with every tiered ChatGPT-backend request (codex-rs core/src/client.rs).
+            route = replace(route, headers={**route.headers, "x-codex-routing-hint": f"model={payload['model']};tier={tier}"})
         remaining = context.remaining()
         if context.observer is not None:
             from .lifecycle import attempt_batch

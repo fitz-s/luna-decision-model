@@ -19,7 +19,7 @@ There is no answer cache (cache TTL is fixed at zero). A pooled HTTP session reu
 | --- | --- | --- |
 | `POST /v1/systemone` | TypeSafe Jev: keyed `noul`, `choice`, `score` questions; full distributions with the original normalization, confidence and score math | Root: `http://127.0.0.1:20141` |
 | `POST /v1/decisions` | OpenAI Decisions: ordered predicate, choice and score questions, names, per-question refusal, distributions, observed usage | With `/v1`: `http://127.0.0.1:20141/v1` |
-| `GET /health` | Build and source identity, transport and readout profile | Reachability check |
+| `GET /health` | Build and source identity, transport, readout profile and service tier | Reachability check |
 
 The TypeSafe SDK takes the root URL and the OpenAI SDK takes the `/v1` URL. Mixing them up is the most common connection error.
 
@@ -62,6 +62,7 @@ The `DECIDE_D_*` prefix is a legacy name kept for compatibility.
 | `DECIDE_D_CONCURRENCY` | service | Concurrent upstream calls (default 4). |
 | `DECIDE_D_DEADLINE` | service | Service deadline in seconds (default 120). |
 | `LDM_READOUT_PROFILE` | service | Readout profile. Default `baseline`. Other profiles are experiments that did not pass their quality gates. |
+| `LDM_SERVICE_TIER` | service | `default` (also when unset) or `fast`. `fast` requests [Codex Fast mode](https://learn.chatgpt.com/docs/agent-configuration/speed#fast-mode) exactly as Codex does, with `service_tier: "priority"` and an `x-codex-routing-hint` header, and uses included limits at 2.5× the Standard rate. Any other value stops the service at startup. If the upstream rejects a Fast request, the service returns that error and never retries at the default tier. `/health` and `doctor` show the setting, and traces record the requested tier and the tier the upstream reports; the ChatGPT backend has reported `default` for Fast requests too, so that field does not confirm the tier served. |
 | `DECIDE_D_URL` | MCP adapter, Node preload | `/v1/systemone` URL of the service (default port 20141). |
 | `DECIDE_D_CLIENT_TIMEOUT` | MCP adapter | Tool deadline in seconds (default 30). |
 | `JEV_URL`, `JEV_DATA` | native Jev CLI | Service `/v1/systemone` URL; Jev's own usage directory (see [native callers](docs/INTEGRATIONS.md#native-jev-cli-read-hook-and-selector-advanced)). |

@@ -4,8 +4,11 @@ Luna Decision Model 0.1.0 is the first recommended release. The prereleases belo
 
 ## Unreleased
 
-Open-source cleanup and a Python 3.10 fix.
+Open-source cleanup, faster credential lookup, optional Fast mode and a Python 3.10 fix.
 
+- Faster: one `codex app-server` now serves successive credential lookups instead of a new process per request, cutting local overhead from about 0.42 s to 0.03 s per request (median). Each lookup still reads the native login and workspace; the process is replaced when Codex's `auth.json` or `config.toml` changes, after a refresh or fault, and after 300 s.
+
+- Added: optional Codex Fast mode. Start the service with `LDM_SERVICE_TIER=fast` to send Codex's Fast request (`service_tier: "priority"` and the `x-codex-routing-hint` header); it uses included limits at 2.5× the Standard rate. Unset or `default` sends nothing new, an invalid value stops startup, and a rejected Fast request is returned rather than retried at the default tier. `/health` and `doctor` show the tier; traces record requested and reported tiers. This changes the runtime build hash.
 - Fixed: on Python 3.10 a request deadline could surface as HTTP 500 and go unenforced, because `concurrent.futures.TimeoutError` is a separate class before 3.11 (`jev_luna/transport.py`).
 - Support is macOS and Linux; Windows is not supported yet and was removed from CI.
 - Removed the private release pipeline: the offline installer ZIP and `install.py`, `scripts/package_release.py`, `verify_release.py`, `install_bundle.py`, `package_review.py` (review/evaluation bundles), `install_local.py`, `build_acceptance_report.py`, `qualify_payloads.py`, `verify_trace_capture.py` and the legacy `prepare_integrations.py`. Build with `python -m build`; CI builds the sdist and wheel and smoke-tests the wheel.

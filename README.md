@@ -42,7 +42,7 @@ python3 -m venv .venv
 .venv/bin/luna-decision start
 ```
 
-The service now runs in this terminal on `127.0.0.1:20141`; `Ctrl-C` stops it.
+The service now runs in this terminal on `127.0.0.1:20141`; `Ctrl-C` stops it. Codex Fast mode is optional: start with `LDM_SERVICE_TIER=fast .venv/bin/luna-decision start` to request it, at 2.5× the Standard rate against included limits ([details](TECHNICAL_REFERENCE.md#environment-variables)).
 
 **2. Check it** in a second terminal, same directory:
 
