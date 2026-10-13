@@ -17,7 +17,7 @@ python3 scripts/render_docs_charts.py --check
 
 Pytest needs no credentials or network.
 
-CI (`.github/workflows/ci.yml`) runs the tests on Ubuntu, macOS and Windows with Python 3.10, 3.12 and 3.14, then builds the sdist and wheel and smoke-tests the wheel in a fresh environment. Local macOS runs do not prove the other matrix entries.
+CI (`.github/workflows/ci.yml`) runs the tests on Ubuntu and macOS (Windows is not supported yet) with Python 3.10, 3.12 and 3.14, then builds the sdist and wheel and smoke-tests the wheel in a fresh environment. Local macOS runs do not prove the other matrix entries.
 
 ## Documentation and charts
 

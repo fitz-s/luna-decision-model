@@ -4,8 +4,10 @@ Luna Decision Model 0.1.0 is the first recommended release. The prereleases belo
 
 ## Unreleased
 
-Open-source cleanup; runtime Python code is unchanged from 0.1.0, and only the bundled adapter assets changed.
+Open-source cleanup and a Python 3.10 fix.
 
+- Fixed: on Python 3.10 a request deadline could surface as HTTP 500 and go unenforced, because `concurrent.futures.TimeoutError` is a separate class before 3.11 (`jev_luna/transport.py`).
+- Support is macOS and Linux; Windows is not supported yet and was removed from CI.
 - Removed the private release pipeline: the offline installer ZIP and `install.py`, `scripts/package_release.py`, `verify_release.py`, `install_bundle.py`, `package_review.py` (review/evaluation bundles), `install_local.py`, `build_acceptance_report.py`, `qualify_payloads.py`, `verify_trace_capture.py` and the legacy `prepare_integrations.py`. Build with `python -m build`; CI builds the sdist and wheel and smoke-tests the wheel.
 - Removed the historical experiment runners under `tools/`, the live runners `tests/*_live.py` and the unwired `.mjs` tests. Adapter preparation moved to `scripts/prepare_adapters.py`; the integration contract moved to `scripts/integration_contract.py`.
 - Removed the root `integrations/` copy; `jev_luna/assets/` is the single source of the native assets and their lock.

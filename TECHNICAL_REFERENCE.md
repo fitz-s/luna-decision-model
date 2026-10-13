@@ -56,7 +56,7 @@ The `DECIDE_D_*` prefix is a legacy name kept for compatibility.
 | Variable | Read by | Effect |
 | --- | --- | --- |
 | `JEV_LUNA_BASE_URL` | `doctor`, `decide` | Default service URL. |
-| `JEV_LUNA_HOME` | service, helpers | Absolute app-state directory holding `service.key`. Default: `~/Library/Application Support/jev-luna` (macOS), `$XDG_CONFIG_HOME/jev-luna` or `~/.config/jev-luna` (Linux), `%APPDATA%\jev-luna` (Windows). |
+| `JEV_LUNA_HOME` | service, helpers | Absolute app-state directory holding `service.key`. Default: `~/Library/Application Support/jev-luna` (macOS), `$XDG_CONFIG_HOME/jev-luna` or `~/.config/jev-luna` (Linux). |
 | `LDM_CODEX_BIN` | service | Path to the `codex` executable if it is not on `PATH`. |
 | `DECIDE_D_TRACE_DIR` | service | Absolute directory for diagnostic traces. Off by default. Traces hold hashes, timing, observed usage and unknown attempts; never request text, OAuth tokens or the service key. |
 | `DECIDE_D_CONCURRENCY` | service | Concurrent upstream calls (default 4). |
@@ -120,7 +120,7 @@ To report a vulnerability, see [CONTRIBUTING.md](CONTRIBUTING.md#security-report
 
 ## Notes
 
-Native host entry points were last exercised live with an earlier prerelease ([changelog](CHANGELOG.md)); 0.1.0 has offline evidence only for them. Not verified: Windows and Linux on real machines, Python 3.10 on a real machine, every third-party skill or plugin, and the live Claude host watchdog chain.
+Native host entry points were last exercised live with an earlier prerelease ([changelog](CHANGELOG.md)); 0.1.0 has offline evidence only for them. Windows is not supported yet. Not verified: Linux on real machines, Python 3.10 on a real machine, every third-party skill or plugin, and the live Claude host watchdog chain.
 
 ## Contributing
 

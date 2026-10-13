@@ -20,7 +20,7 @@ class NativeManager(unittest.TestCase):
         input_read,input_write=os.pipe();output_read,output_write=os.pipe()
         proc=MagicMock();proc.poll.return_value=None
         proc.stdin=os.fdopen(input_write,'wb',buffering=0)
-        proc.stdout=os.fdopen(output_read,'rb',buffering=0)
+        proc.stdout=os.fdopen(output_read,'rb')  # buffered like Popen's default; unbuffered readline() is one syscall per byte, so a 1 MiB frame alone nearly exhausted the 1 s budget
         peer_in=os.fdopen(input_read,'rb',buffering=0)
         peer_out=os.fdopen(output_write,'wb',buffering=0)
         sent=[]

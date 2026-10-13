@@ -142,4 +142,4 @@ Protocol references: [TypeSafe Python](https://docs.typesafe.ai/sdk/python), [Ty
 
 ## Notes
 
-The project rule guides coding agents; it does not reroute existing requests or prove every generated application compatible. Connection errors stay errors, with no fallback to a paid endpoint or another model. Adapter preparation was tested on macOS arm64 with Go 1.26.0 and Node 25.5.0 only; Windows, Linux, other third-party skills and live Claude or Codex host activation are unverified.
+The project rule guides coding agents; it does not reroute existing requests or prove every generated application compatible. Connection errors stay errors, with no fallback to a paid endpoint or another model. Adapter preparation was tested on macOS arm64 with Go 1.26.0 and Node 25.5.0 only; Windows is not supported yet, and Linux, other third-party skills and live Claude or Codex host activation are unverified.

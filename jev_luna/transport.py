@@ -333,7 +333,7 @@ class Client:
         except concurrent.futures.CancelledError:
             context.remaining()
             raise Reject(499, "cancelled", "Request cancelled") from None
-        except (TimeoutError, asyncio.TimeoutError):
+        except (TimeoutError, asyncio.TimeoutError, concurrent.futures.TimeoutError):  # distinct classes before 3.11
             future.cancel()
             context.cancel("deadline", "request deadline exceeded", 504)
             raise context.reason from None

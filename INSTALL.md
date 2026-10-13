@@ -28,7 +28,7 @@ python3 -m venv .venv
 | `mcp` | MCP stdio adapter (`mcp>=1.30,<2`), see [MCP](#mcp-optional) |
 | `test` | Test dependencies, see [CONTRIBUTING.md](CONTRIBUTING.md) |
 
-Combine extras as needed, for example `.venv/bin/pip install '.[openai,typesafe,mcp]'`. On Windows the executables are in `.venv\Scripts`.
+Combine extras as needed, for example `.venv/bin/pip install '.[openai,typesafe,mcp]'`.
 
 ## Run
 
@@ -61,4 +61,4 @@ Stop the service with `Ctrl-C`. Remove any MCP entries or project connections yo
 
 ## Notes
 
-GPT-6 Luna access depends on your account, client and rollout. Real-machine testing covered macOS only; Python 3.10, Windows, Linux, keyring-based Codex credential storage and regional accounts are unverified.
+GPT-6 Luna access depends on your account, client and rollout. Supported platforms: macOS and Linux; Windows is not supported yet (loopback key protection relies on POSIX file permissions). Real-machine testing covered macOS only; Python 3.10, Linux, keyring-based Codex credential storage and regional accounts are unverified.
