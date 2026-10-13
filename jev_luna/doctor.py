@@ -60,7 +60,7 @@ def server_health(url, *, timeout=3):
         if not isinstance(health, dict) or health.get('ok') is not True:
             raise ValueError('Invalid target health response')
         return {'reachable': True, 'liveness': True, 'native_inference_verified': False,
-                **{key: health.get(key) for key in ('build_sha256', 'readout_profile', 'service_tier', 'transport', 'model',
+                **{key: health.get(key) for key in ('build_sha256', 'readout_profile', 'service_tier', 'probability_shrink', 'transport', 'model',
                     'reasoning_policy', 'deadline_seconds', 'local_auth_required', 'upstream_transport', 'responses_lite',
                     'hedge_after_ms')}}
     finally:

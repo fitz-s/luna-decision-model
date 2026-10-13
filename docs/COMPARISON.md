@@ -74,6 +74,10 @@ This project's run: build `3a86e9e`, `build_sha256` `fbd8ac27b9c1`, codex-cli 0.
 
 Series differ in date, harness commit and machine, so none of this is a paired test. Jev has no vision input and scored the 122 image rows from text renderings; both Luna series were sent the images. Latency for the Decisions API was timed by the benchmark authors through OpenRouter, and Jev by its own harness; ours is wall time on one machine through the Codex app-server. One PRD-1 row ended in `invalid_output` after three attempts and counts as wrong.
 
+## Probability shrink
+
+On this run the service's probabilities are overconfident: 82.6% of rows return a one-hot vector, and 66 wrong answers carried confidence of 0.99 or more. The optional `LDM_PROBABILITY_SHRINK` ([formula and how to fit it](../TECHNICAL_REFERENCE.md#environment-variables)) moves every returned vector toward uniform without changing any answer. With `a = 0.10`, fit on these 1,070 rows and scored out-of-fold with whole tasks held out (35-fold by task, 11-fold by category), Brier goes from 0.1675 to 0.161 (0.1614 and 0.1617), log loss from 1.63 to 0.35, ECE from 0.074 to 0.011 (0.012 and 0.010), and wrong answers at confidence 0.99 or more from 66 to 0; accuracy does not change. The Brier gain is small (paired 95% interval -0.013 to +0.0004, task-clustered bootstrap); log loss, ECE and the confident-error count move clearly. It beats the raw Brier on 14 of 35 tasks: it helps the low-accuracy tasks and costs the near-perfect ones (the finance and design tasks). Applied to the published Jev and Decisions API predictions it makes them worse, Brier 0.1115 to 0.1171 and 0.1376 to 0.1419, because they are already calibrated (ECE 0.014 and 0.020), so it is off by default.
+
 ## Reasoning effort
 
 With reasoning effort on auto, the service chose medium for 174 rows (99 image, 75 text) and none for the other 897. Those 174 rows were run again with `LDM_REASONING_EFFORT=none` (run `20261013T160021Z-slice-none`).
