@@ -542,5 +542,19 @@
         ]
       }
     ]
+  },
+  "api_routes": {
+    "source_url": "https://developers.openai.com/api/docs/guides/decisions",
+    "fetched_at_utc": "2026-10-13",
+    "decisions": {
+      "status": "public beta",
+      "model": "gpt-6-luna",
+      "only_model": true,
+      "input_per_million": 0.1,
+      "output_or_cache_charges": false,
+      "speed_claim": "returns typed answers about 10x faster than the Responses API",
+      "speed_multiplier_vs_responses": 10,
+      "vendor_claim": true
+    }
   }
 }

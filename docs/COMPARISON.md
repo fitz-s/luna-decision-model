@@ -20,6 +20,8 @@ Risk uses 60 author-labelled agent tool calls; toxicity binarizes Civil Comments
 
 ![Per 1,000 requests: $0.026 to $0.075 on API rate cards, about 1.9 credits at GPT-6 Luna's credit rate.](assets/cost.svg)
 
+![GPT-6 Luna routes compared: OpenAI Decisions API and Responses API use API keys; Luna Decision Model uses your Codex login.](assets/api-routes.svg)
+
 At the token mix measured in the archived Luna run (284,370 input and 11,742 output tokens over 460 requests, about **618 input + 26 output tokens per request**):
 
 | Route | Rate per 1M tokens (input / output) | Per 1,000 requests |

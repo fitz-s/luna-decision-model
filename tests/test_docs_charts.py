@@ -60,6 +60,18 @@ class DocsChartsTest(unittest.TestCase):
             self.assertIn(s, svg)
         self.assertIn(f'≈{credits:.1f} credits', svg)
 
+    def test_api_routes_numbers_match_data(self):
+        data = charts.json.loads(charts.DATA.read_text())
+        dec = data['api_routes']['decisions']
+        self.assertTrue(dec['vendor_claim'])
+        self.assertEqual(dec['input_per_million'], data['pricing']['rates']['openai_decisions']['input_per_million'])
+        _, _, usd, credits, _ = charts.cost_per_1000(data)
+        svg = charts.render()['api-routes.svg']
+        for s in (f'${usd["openai_decisions"]:.3f}', f'${usd["ordinary_luna_api_reference"]:.3f}', f'≈{credits:.1f} credits',
+                  f'≈{dec["speed_multiplier_vs_responses"]}× faster', dec['status'], 'OpenAI claim', 'Codex ChatGPT',
+                  'GPT-6 Luna three ways: metered API key, or your Codex login', "Speed is OpenAI's published claim, not measured here."):
+            self.assertIn(s, svg)
+
     def test_removed_baseline_chart_stays_removed(self):
         self.assertFalse((ROOT / 'docs/assets/baseline-development.svg').exists())
 

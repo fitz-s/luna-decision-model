@@ -15,7 +15,7 @@ CSS = """:root{color-scheme:light dark;--ink:#1f2328;--mute:#59636e;--line:#d1d9
 @media (prefers-color-scheme:dark){:root{--ink:#e6edf3;--mute:#9198a1;--line:#3d444d;--luna:#3987e5;--jev:#d95926;--cloud:#58a6ff;--api:#8b949e}}
 text{font:14px -apple-system,BlinkMacSystemFont,"Segoe UI",Helvetica,Arial,sans-serif;fill:var(--ink)}
 .m{fill:var(--mute)}.s{font-size:13px}.b{font-weight:600}.h{font-size:19px;font-weight:700}.c{text-anchor:middle}
-.api{fill:var(--api)}.pill{fill:none;stroke:var(--luna);stroke-width:2}.luna{fill:var(--luna)}.jev{fill:var(--jev)}.ln{stroke:var(--line);stroke-width:1;fill:none}
+.api{fill:var(--api)}.tag{fill:none;stroke:var(--mute);stroke-width:1.2}.pill{fill:none;stroke:var(--luna);stroke-width:2}.luna{fill:var(--luna)}.jev{fill:var(--jev)}.ln{stroke:var(--line);stroke-width:1;fill:none}
 .box{fill:none;stroke:var(--line);stroke-width:1.5}.cloud{fill:none;stroke:var(--cloud);stroke-width:2}
 .ar{stroke:var(--mute);stroke-width:1.8;fill:none}.arh{fill:var(--mute)}"""
 
@@ -127,9 +127,38 @@ def cost(data):
     return svg(760, 298, title, 'Cost of 1,000 requests on three API rate cards in US dollars, and on Luna Decision Model as credits at Luna\'s credit rate.', '\n'.join(g))
 
 
+def api_routes(data):
+    _, _, usd, credits, _ = cost_per_1000(data)
+    dec = data['api_routes']['decisions']
+    x = [16, 222, 340, 475, 628]
+    heads = ['Route', 'Access', 'Answers', 'Cost / 1,000 requests', 'Speed claim']
+    # (name, note, access, answers, (cost, cost note), (speed, speed note))
+    rows = [('OpenAI Decisions API', dec['status'], ['API key'], ['Typed answers', 'labels, probabilities'],
+             (f'${usd["openai_decisions"]:.3f}', 'metered'), (f'≈{dec["speed_multiplier_vs_responses"]}× faster', 'OpenAI claim')),
+            ('GPT-6 Luna Responses API', '', ['API key'], ['Free text', 'you parse it'], (f'${usd["ordinary_luna_api_reference"]:.3f}', 'metered'), ('baseline', '')),
+            ('Luna Decision Model', 'this project', ['Codex ChatGPT', 'login'], ['Typed answers', 'labels, probabilities'],
+             (f'≈{credits:.1f} credits', 'at Luna\'s credit rate'), ('runs on the', 'Responses route'))]
+    title = 'GPT-6 Luna three ways: metered API key, or your Codex login'
+    g = [text(16, 28, escape(title), 'h')] + [text(x[i], 62, h, 'm s b') for i, h in enumerate(heads)]
+    for i, (name, note, access, answers, cost_cell, speed) in enumerate(rows):
+        y = 72 + 58 * i
+        g.append(f'<line x1="16" y1="{y}" x2="744" y2="{y}" class="ln"/>')
+        if i == 2: g.append(f'<rect x="8" y="{y + 6}" width="744" height="46" rx="8" class="pill"/>')
+        g += [text(x[0], y + 24, name, 'b'), text(x[0], y + 42, note, 'm s')] if note else [text(x[0], y + 33, name, 'b')]
+        for col, cell in ((1, access), (2, answers), (3, cost_cell), (4, speed)):
+            lines = [c for c in cell if c]
+            top = y + (33 if len(lines) == 1 else 24)
+            for j, line in enumerate(lines):
+                bold = (j == 0 and col in (2, 3)) or (col == 4 and i == 0 and j == 0)
+                g.append(text(x[col], top + 18 * j, line, 'b' if bold else ('s m' if j else '')))
+        if i == 0: g.append(f'<rect x="{x[4] - 6}" y="{y + 7}" width="120" height="44" rx="6" class="tag"/>')
+    g += [f'<line x1="16" y1="250" x2="744" y2="250" class="ln"/>', text(16, 274, 'Speed is OpenAI\'s published claim, not measured here.', 'm s')]
+    return svg(760, 288, title, 'Route comparison for GPT-6 Luna decisions: access method, answer type, cost per 1,000 requests and OpenAI-claimed speed.', '\n'.join(g))
+
+
 def render():
     data = json.loads(DATA.read_text())
-    return {'architecture.svg': architecture(), 'public-comparison.svg': comparison(data), 'cost.svg': cost(data)}
+    return {'architecture.svg': architecture(), 'public-comparison.svg': comparison(data), 'cost.svg': cost(data), 'api-routes.svg': api_routes(data)}
 
 
 def main():

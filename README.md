@@ -24,6 +24,8 @@ Luna Decision Model runs these same callers on GPT-6 Luna through your Codex sub
 
 ![Cost per 1,000 requests: native Jev $0.026, GPT-6 Luna API $0.075, Luna Decision Model about 1.9 credits at GPT-6 Luna's credit rate.](docs/assets/cost.svg)
 
+![GPT-6 Luna routes compared: OpenAI Decisions API and Responses API use API keys; Luna Decision Model uses your Codex login.](docs/assets/api-routes.svg)
+
 ## Benchmark
 
 ![Luna and native Jev: correct answers, median latency and Brier on three public suites.](docs/assets/public-comparison.svg)

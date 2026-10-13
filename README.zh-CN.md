@@ -24,6 +24,8 @@ Luna Decision Model 让这些调用方通过你的 Codex 订阅在 GPT-6 Luna �
 
 ![每 1,000 次请求的成本：原生 Jev $0.026，GPT-6 Luna API $0.075，Luna Decision Model 按 GPT-6 Luna credit 费率约 1.9 credits。](docs/assets/cost.svg)
 
+![GPT-6 Luna 三种用法对比：OpenAI Decisions API 和 Responses API 用 API 密钥，Luna Decision Model 用你的 Codex 登录。](docs/assets/api-routes.svg)
+
 ## 基准测试
 
 ![Luna 与原生 Jev 在三组公开测试上的正确数、中位延迟和 Brier。](docs/assets/public-comparison.svg)
