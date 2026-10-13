@@ -4,6 +4,7 @@ import http.client
 import os
 from pathlib import Path
 import re
+import stat
 import sys
 import threading
 import time
@@ -166,20 +167,28 @@ def _store_state():
             st=os.stat(path)
             state.append((st.st_ino, st.st_size, st.st_mtime_ns))
         for path in _managed_preferences():
-            if os.path.lexists(path):
-                return None
+            try:
+                os.lstat(path)  # lexists() would read an inspection error as "absent"
+            except (FileNotFoundError, NotADirectoryError):
+                continue
+            return None  # present, or unknowable (any other OSError reaches the handler below)
         for path in (home/"config.toml",)+SYSTEM_LAYERS:
             try:
-                with open(path, "rb") as layer:
-                    st=os.fstat(layer.fileno())
-                    identity=(st.st_ino, st.st_size, st.st_mtime_ns)
-                    mode=_layer_modes.get(str(path))
-                    if mode is None or mode[0]!=identity:
-                        raw=layer.read(MAX_CONFIG+1)
-                        mode=_layer_modes[str(path)]=(identity, len(raw)<=MAX_CONFIG and _file_mode(raw))
+                # Nonblocking open: a FIFO must not stall this call, which runs under the session lock.
+                # Symlinks are followed, as Codex's own config loading does.
+                fd=os.open(path, os.O_RDONLY|getattr(os, "O_NONBLOCK", 0))
             except FileNotFoundError:
                 state.append(None)
                 continue
+            with os.fdopen(fd, "rb") as layer:
+                st=os.fstat(fd)
+                if not stat.S_ISREG(st.st_mode):
+                    return None
+                identity=(st.st_ino, st.st_size, st.st_mtime_ns)
+                mode=_layer_modes.get(str(path))
+                if mode is None or mode[0]!=identity:
+                    raw=layer.read(MAX_CONFIG+1)
+                    mode=_layer_modes[str(path)]=(identity, len(raw)<=MAX_CONFIG and _file_mode(raw))
             if not mode[1]:
                 return None
             state.append(identity)
@@ -206,8 +215,10 @@ def _shared_credential(deadline):
 
     Every read, fresh or reused, is fenced: store state is taken before and after it and a
     read that straddles a change is discarded (at most STORE_REBUILDS times, then 409).
-    Only a channel failure of a reused process (REUSE_RETRY) is retried, once, on a fresh
-    process bound to the owner and routing the reused one had established; every other
+    A lookup is bound to the owner and routing it first observes (a reused process's
+    established pair, else the first fresh read): every replacement must match, so token
+    rotation for the same owner is absorbed while an owner or routing switch is a 409.
+    Only a channel failure of a reused process (REUSE_RETRY) is retried, once; every other
     error, including 409 account/policy changes, propagates.
     """
     global _session
@@ -218,7 +229,7 @@ def _shared_credential(deadline):
     if left<=0 or not _session_lock.acquire(timeout=left):
         raise expired()
     try:
-        binding, rebuilds = None, 0
+        binding, rebuilds, retried = None, 0, False  # binding: (owner, routing) this lookup has observed
         while True:
             state=_store_state()
             session,_session=_session,None  # republished only after a fenced success
@@ -226,19 +237,24 @@ def _shared_credential(deadline):
                 _retire(session, deadline)
                 session=None
             reused=session is not None
-            if not reused:
+            if reused:
+                binding=session.binding
+            else:
                 if time.monotonic()>=deadline:
                     raise expired()
                 session=Session(deadline)
             session.deadline=deadline
             try:
                 value=session.credential(deadline, expected_account=binding[0] if binding else None)
-                if binding is not None and value.routing_override!=binding[1]:
-                    raise NativeRpcError("native_policy_changed", "Native routing changed during lookup", 409)
+                if binding is not None:
+                    if value.account_id!=binding[0]:
+                        raise NativeRpcError("native_account_changed", "Native account changed during lookup", 409)
+                    if value.routing_override!=binding[1]:
+                        raise NativeRpcError("native_policy_changed", "Native routing changed during lookup", 409)
             except NativeRpcError as error:
                 _retire(session, deadline)
-                if reused and binding is None and error.code in REUSE_RETRY:
-                    binding=session.binding
+                if reused and not retried and error.code in REUSE_RETRY:
+                    retried=True
                     continue
                 raise
             except BaseException:
@@ -250,6 +266,7 @@ def _shared_credential(deadline):
                 if rebuilds>STORE_REBUILDS:
                     raise NativeRpcError("native_account_changed",
                                          "Native credential store kept changing during lookup; start a new request", 409)
+                binding=binding or (value.account_id, value.routing_override)
                 continue
             session.binding=(value.account_id, value.routing_override)
             if state is not None:

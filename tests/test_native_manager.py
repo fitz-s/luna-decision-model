@@ -150,7 +150,7 @@ class SharedNativeSession(unittest.TestCase):
     def setUp(self):
         auth._drop_session()
         self.spawned=[];self.state=('exe','home',(1,10,100),None);self.owner='native-workspace';self.policy='NO_CONSTRAINT'
-        self.on_read=None
+        self.on_read=None;self.after_read=None
         test=self
         class Fake:
             def __init__(self,deadline):
@@ -165,7 +165,9 @@ class SharedNativeSession(unittest.TestCase):
                 expected=kwargs.get('expected_account')
                 if expected is not None and expected!=test.owner:
                     raise native.NativeRpcError('native_account_changed','changed',409)
-                return native.Credential(token(),test.owner,'https://chatgpt.com',test.policy)
+                value=native.Credential(token(),test.owner,'https://chatgpt.com',test.policy)
+                if test.after_read:hook,test.after_read=test.after_read,None;hook()  # the store moves after this read answered
+                return value
             def close(self):self.closed=True
         self.patches=[patch.object(native,'Session',Fake),patch.object(auth,'_store_state',lambda:self.state)]
         for p in self.patches:p.start()
@@ -201,15 +203,49 @@ class SharedNativeSession(unittest.TestCase):
         self.assertEqual(len(self.spawned),2);self.assertTrue(self.spawned[0].closed)
         self.assertEqual(self.spawned[1].calls,1);self.assertIs(auth._session,self.spawned[1])
 
-    def test_store_change_during_fresh_lookup(self):
-        # Owner A is read by a fresh process while the store switches to owner B: A is never published.
+    def test_store_change_during_fresh_lookup_cannot_switch_owner(self):
+        # Owner A is observed by a fresh process while the store switches to B: neither is published.
         self.owner='account-a'
+        def switch():self.state=('exe','home',(7,20,200),None);self.owner='account-b'
+        self.after_read=switch
+        with self.assertRaises(auth.NativeAuthStateError) as error:auth._native_login(1)
+        self.assertEqual((error.exception.code,error.exception.status),('native_account_changed',409))
+        self.assertEqual(len(self.spawned),2);self.assertTrue(all(s.closed for s in self.spawned))
+        self.assertEqual(self.spawned[1].kwargs[-1]['expected_account'],'account-a')
+        self.assertIsNone(auth._session)
+
+    def test_store_change_during_reused_read_cannot_switch_owner(self):
+        auth._native_login(1)
         def switch():self.state=('exe','home',(7,20,200),None);self.owner='account-b';self.on_read=None
         self.on_read=switch
-        access,account,_=auth._native_login(1)
-        self.assertEqual(account,'account-b')
-        self.assertEqual(len(self.spawned),2);self.assertTrue(self.spawned[0].closed)
-        self.assertIs(auth._session,self.spawned[1]);self.assertEqual(self.spawned[1].store_state,self.state)
+        with self.assertRaises(auth.NativeAuthStateError) as error:auth._native_login(1)
+        self.assertEqual((error.exception.code,error.exception.status),('native_account_changed',409))
+        self.assertTrue(all(s.closed for s in self.spawned));self.assertIsNone(auth._session)
+
+    def test_store_change_during_lookup_cannot_switch_routing(self):
+        for fresh in (True,False):
+            with self.subTest(fresh=fresh):
+                auth._drop_session();self.spawned.clear();self.policy='NO_CONSTRAINT';self.state=('exe','home',(1,10,100),None)
+                if not fresh:auth._native_login(1)
+                def switch():self.state=('exe','home',(8,30,300),None);self.policy='us'
+                if fresh:self.after_read=switch  # A/NO_CONSTRAINT answered, then the store and routing moved
+                else:self.on_read=switch
+                with self.assertRaises(auth.NativeAuthStateError) as error:auth._native_login(1)
+                self.assertEqual((error.exception.code,error.exception.status),('native_policy_changed',409))
+                self.assertTrue(all(s.closed for s in self.spawned));self.assertIsNone(auth._session)
+                self.on_read=None
+
+    def test_store_change_during_lookup_allows_same_owner_rotation(self):
+        for fresh in (True,False):
+            with self.subTest(fresh=fresh):
+                auth._drop_session();self.spawned.clear();self.state=('exe','home',(1,10,100),None)
+                if not fresh:auth._native_login(1)
+                def rotate():self.state=('exe','home',(9,40,400),None);self.on_read=None
+                self.on_read=rotate
+                self.assertEqual(auth._native_login(1)[1],'native-workspace')
+                self.assertEqual(len(self.spawned),2);self.assertTrue(self.spawned[0].closed)
+                self.assertEqual(self.spawned[1].kwargs[-1]['expected_account'],'native-workspace')
+                self.assertIs(auth._session,self.spawned[1]);self.assertEqual(self.spawned[1].store_state,self.state)
 
     def test_store_churn_fails_closed_without_publishing(self):
         churn=iter(range(100))
@@ -392,6 +428,52 @@ class NativeStoreState(unittest.TestCase):
         self.assertIsNone(auth._store_state())
         (self.etc/'requirements.toml').unlink();(self.etc/'managed.plist').write_text('')
         self.assertIsNone(auth._store_state())
+
+    def test_unreadable_managed_preference_disables_reuse_only_missing_is_absent(self):
+        (self.home/'auth.json').write_text('{}')
+        plist=self.etc/'managed.plist'
+        self.assertIsNotNone(auth._store_state())  # parent missing: absent
+        self.etc.mkdir();self.assertIsNotNone(auth._store_state())  # file missing: absent
+        (self.etc/'file').write_text('');absent_under_file=self.etc/'file'/'managed.plist'
+        with patch.object(auth,'_managed_preferences',lambda:(absent_under_file,)):
+            self.assertIsNotNone(auth._store_state())  # NotADirectoryError: missing parent
+        real=os.lstat
+        def denied(path,*a,**k):
+            if str(path)==str(plist):raise PermissionError('inspection denied')
+            return real(path,*a,**k)
+        with patch.object(os,'lstat',denied):
+            self.assertIsNone(auth._store_state())  # not evidence of absence
+        plist.write_text('');self.assertIsNone(auth._store_state())
+
+    def test_special_config_layer_never_blocks_or_holds_the_session_lock(self):
+        import threading as th
+        (self.home/'auth.json').write_text('{}')
+        fifo=self.home/'config.toml';os.mkfifo(fifo,0o600)
+        started=time.monotonic()
+        self.assertIsNone(auth._store_state())  # a FIFO is not a regular config file; no writer, still returns
+        self.assertLess(time.monotonic()-started,.5)
+        # Through the broker: the budget is honoured and the session lock is released.
+        done=th.Event()
+        def run():
+            try:auth._native_login(.05)
+            except Exception:pass
+            finally:done.set()
+        spawned=[]
+        class Fake:
+            def __init__(self,deadline):
+                self.closed=False;self.broken=th.Event();self.proc=MagicMock();self.proc.poll.return_value=None
+                self.inbox=queue.Queue();self.started=time.monotonic();spawned.append(self)
+            def credential(self,deadline,**kwargs):return native.Credential(token(),'native-workspace','https://chatgpt.com')
+            def close(self):self.closed=True
+        with patch.object(native,'Session',Fake):
+            th.Thread(target=run,daemon=True).start()
+            self.assertTrue(done.wait(1));self.assertFalse(auth._session_lock.locked())
+        self.assertTrue(all(sp.closed for sp in spawned));self.assertIsNone(auth._session)
+        fifo.unlink();(self.home/'target').mkdir()
+        os.symlink(self.home/'target',fifo)
+        self.assertIsNone(auth._store_state())  # directory behind a symlink: not a regular file
+        fifo.unlink();(self.home/'real.toml').write_text('model = "x"\n');os.symlink(self.home/'real.toml',fifo)
+        self.assertIsNotNone(auth._store_state())  # symlinked regular file is followed, as Codex does
 
     def test_codex_binary_or_home_change_retires_process(self):
         (self.home/'auth.json').write_text('{}')
