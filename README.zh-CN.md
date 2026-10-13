@@ -26,9 +26,9 @@ Luna Decision Model 让这些调用方通过你的 Codex 订阅在 GPT-6 Luna �
 
 ## 基准测试
 
-![Jev、经 Decisions API 的 GPT-6 Luna 与本项目的对比：460 个公开任务和 Decision Bench v4 上的准确率、中位延迟和 Brier，以及每 1,000 次请求的成本。](docs/assets/public-comparison.svg)
+![Decision Bench v4，1,071 行：原生 Jev、经 Decisions API 的 GPT-6 Luna 与经本项目的 GPT-6 Luna，在整体和各任务组上的准确率、Brier 和中位延迟。](docs/assets/public-comparison.svg)
 
-p95 延迟、校准细节和费率来源见 [docs/COMPARISON.md](docs/COMPARISON.md)（英文）。你自己套餐的用量见 [docs/QUOTA.md](docs/QUOTA.md)（英文）。
+逐任务结果、运行细节、推理强度和费率来源见 [docs/COMPARISON.md](docs/COMPARISON.md)（英文）。你自己套餐的用量见 [docs/QUOTA.md](docs/QUOTA.md)（英文）。
 
 ## 快速开始
 

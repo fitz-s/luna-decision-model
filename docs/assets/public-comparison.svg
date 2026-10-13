@@ -1,6 +1,6 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 760 638" role="img" aria-labelledby="t d">
-<title id="t">LLM decision model: Jev-level accuracy, no per-request bill, ~1 s per call</title>
-<desc id="d">Jev, GPT-6 Luna through the Decisions API and through Luna Decision Model: accuracy, median latency and Brier score, plus cost.</desc>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 760 836" role="img" aria-labelledby="t d">
+<title id="t">LLM decision model: near-Jev accuracy, no per-request bill, ~1.7 s per call</title>
+<desc id="d">Accuracy, Brier score and median latency of Jev, GPT-6 Luna through the Decisions API and through Luna Decision Model on Decision Bench v4.</desc>
 <style>
 :root{color-scheme:light dark;--ink:#1f2328;--mute:#59636e;--line:#d1d9e0;--luna:#2a78d6;--jev:#eb6834;--cloud:#0f6cbd;--api:#6e7781;--dec:#8250df}
 @media (prefers-color-scheme:dark){:root{--ink:#e6edf3;--mute:#9198a1;--line:#3d444d;--luna:#3987e5;--jev:#d95926;--cloud:#58a6ff;--api:#8b949e;--dec:#a371f7}}
@@ -10,122 +10,278 @@ text{font:14px -apple-system,BlinkMacSystemFont,"Segoe UI",Helvetica,Arial,sans-
 .box{fill:none;stroke:var(--line);stroke-width:1.5}.cloud{fill:none;stroke:var(--cloud);stroke-width:2}
 .ar{stroke:var(--mute);stroke-width:1.8;fill:none}.arh{fill:var(--mute)}
 </style>
-<text x="16" y="28" class="h">LLM decision model: Jev-level accuracy, no per-request bill, ~1 s per call</text>
+<text x="16" y="28" class="h">LLM decision model: near-Jev accuracy, no per-request bill, ~1.7 s per call</text>
 <rect x="16" y="46" width="12" height="12" rx="2" class="jev"/>
-<text x="34" y="57" class="s">Jev (native)</text>
+<text x="34" y="57" class="s">Jev native</text>
 <rect x="156" y="46" width="12" height="12" rx="2" class="dec"/>
 <text x="174" y="57" class="s">GPT-6 Luna · Decisions API</text>
 <rect x="368" y="46" width="12" height="12" rx="2" class="luna"/>
 <text x="386" y="57" class="s">GPT-6 Luna · this project</text>
-<text x="16" y="92" class="b">A · Our 460 public tasks: Jev vs this project</text>
-<text x="140" y="114" class="m s b">Correct answers</text>
-<text x="350" y="114" class="m s b">Median latency (p50)</text>
-<text x="605" y="114" class="m s b">Brier (lower is better)</text>
-<line x1="16" y1="120" x2="744" y2="120" class="ln"/>
-<text x="16" y="143" class="b">Risk</text>
-<text x="16" y="161" class="m s">multiclass Brier</text>
-<rect x="140" y="128" width="77.0" height="14" rx="2" class="jev"/>
-<text x="223.0" y="139" class="s">91.7% · 55/60</text>
-<rect x="350" y="128" width="31.6" height="14" rx="2" class="jev"/>
-<text x="387.62573980595266" y="139" class="s">0.42 s</text>
-<rect x="605" y="128" width="56.7" height="14" rx="2" class="jev"/>
-<text x="667.6549035516067" y="139" class="s">0.116</text>
-<rect x="140" y="150" width="77.0" height="14" rx="2" class="luna"/>
-<text x="223.0" y="161" class="s">91.7% · 55/60</text>
-<rect x="350" y="150" width="90.0" height="14" rx="2" class="luna"/>
-<text x="446.0" y="161" class="s">1.20 s</text>
-<rect x="605" y="150" width="79.9" height="14" rx="2" class="luna"/>
-<text x="690.8916622901913" y="161" class="s">0.164</text>
-<line x1="140" y1="124" x2="140" y2="166" class="ln"/>
-<line x1="350" y1="124" x2="350" y2="166" class="ln"/>
-<line x1="605" y1="124" x2="605" y2="166" class="ln"/>
-<line x1="16" y1="180" x2="744" y2="180" class="ln"/>
-<text x="16" y="203" class="b">Toxicity</text>
-<text x="16" y="221" class="m s">binary Brier</text>
-<rect x="140" y="188" width="65.9" height="14" rx="2" class="jev"/>
-<text x="211.94" y="199" class="s">78.5% · 157/200</text>
-<rect x="350" y="188" width="11.4" height="14" rx="2" class="jev"/>
-<text x="367.357291987021" y="199" class="s">0.15 s</text>
-<rect x="605" y="188" width="72.9" height="14" rx="2" class="jev"/>
-<text x="683.9326147361229" y="199" class="s">0.149</text>
-<rect x="140" y="210" width="67.2" height="14" rx="2" class="luna"/>
-<text x="213.2" y="221" class="s">80.0% · 160/200</text>
-<rect x="350" y="210" width="82.0" height="14" rx="2" class="luna"/>
-<text x="438.007254983495" y="221" class="s">1.09 s</text>
-<rect x="605" y="210" width="80.0" height="14" rx="2" class="luna"/>
-<text x="691.0" y="221" class="s">0.164</text>
-<line x1="140" y1="184" x2="140" y2="226" class="ln"/>
-<line x1="350" y1="184" x2="350" y2="226" class="ln"/>
-<line x1="605" y1="184" x2="605" y2="226" class="ln"/>
-<line x1="16" y1="240" x2="744" y2="240" class="ln"/>
-<text x="16" y="263" class="b">Tool selection</text>
-<text x="16" y="281" class="m s">multiclass Brier</text>
-<rect x="140" y="248" width="83.6" height="14" rx="2" class="jev"/>
-<text x="229.57999999999998" y="259" class="s">99.5% · 199/200</text>
-<rect x="350" y="248" width="11.1" height="14" rx="2" class="jev"/>
-<text x="367.0959240833206" y="259" class="s">0.15 s</text>
-<rect x="605" y="248" width="2.3" height="14" rx="2" class="jev"/>
-<text x="613.3073192602963" y="259" class="s">0.005</text>
-<rect x="140" y="270" width="83.2" height="14" rx="2" class="luna"/>
-<text x="229.16" y="281" class="s">99.0% · 198/200</text>
-<rect x="350" y="270" width="83.9" height="14" rx="2" class="luna"/>
-<text x="439.87973002854375" y="281" class="s">1.12 s</text>
-<rect x="605" y="270" width="7.6" height="14" rx="2" class="luna"/>
-<text x="618.5860129702389" y="281" class="s">0.016</text>
-<line x1="140" y1="244" x2="140" y2="286" class="ln"/>
-<line x1="350" y1="244" x2="350" y2="286" class="ln"/>
-<line x1="605" y1="244" x2="605" y2="286" class="ln"/>
-<line x1="16" y1="300" x2="744" y2="300" class="ln"/>
-<text x="16" y="326" class="b">B · Same model through the Decisions API: independent run, Decision Bench v4</text>
-<text x="16" y="344" class="m s">Jev vs Luna Decisions API on the same 1,071 rows.</text>
-<text x="140" y="368" class="m s b">Correct answers</text>
-<text x="350" y="368" class="m s b">Median latency (p50)</text>
-<text x="605" y="368" class="m s b">Brier (lower is better)</text>
-<line x1="16" y1="374" x2="744" y2="374" class="ln"/>
-<text x="16" y="397" class="b">All tasks</text>
-<text x="16" y="415" class="m s">1,071 rows</text>
-<rect x="140" y="382" width="77.6" height="14" rx="2" class="jev"/>
-<text x="223.64705882352942" y="393" class="s">92.4% · 990/1071</text>
-<rect x="350" y="382" width="32.9" height="14" rx="2" class="jev"/>
-<text x="388.89464600363965" y="393" class="s">0.44 s</text>
-<rect x="605" y="382" width="64.8" height="14" rx="2" class="jev"/>
-<text x="675.7571913096193" y="393" class="s">0.112</text>
-<rect x="140" y="404" width="76.0" height="14" rx="2" class="dec"/>
-<text x="222.0" y="415" class="s">90.5% · 969/1071</text>
-<rect x="350" y="404" width="24.4" height="14" rx="2" class="dec"/>
-<text x="380.4172892495604" y="415" class="s">0.33 s</text>
-<rect x="605" y="404" width="80.0" height="14" rx="2" class="dec"/>
-<text x="691.0" y="415" class="s">0.138</text>
-<line x1="140" y1="378" x2="140" y2="420" class="ln"/>
-<line x1="350" y1="378" x2="350" y2="420" class="ln"/>
-<line x1="605" y1="378" x2="605" y2="420" class="ln"/>
-<line x1="16" y1="434" x2="744" y2="434" class="ln"/>
-<text x="16" y="457" class="b">AGT-1</text>
-<text x="16" y="475" class="m s">Which tool to call</text>
-<rect x="140" y="442" width="81.7" height="14" rx="2" class="jev"/>
-<text x="227.66666666666669" y="453" class="s">97.2% · 35/36</text>
-<rect x="140" y="464" width="81.7" height="14" rx="2" class="dec"/>
-<text x="227.66666666666669" y="475" class="s">97.2% · 35/36</text>
-<line x1="140" y1="438" x2="140" y2="480" class="ln"/>
-<line x1="16" y1="486" x2="744" y2="486" class="ln"/>
-<text x="16" y="509" class="b">SAF-2</text>
-<text x="16" y="527" class="m s">Toxic comment</text>
-<rect x="140" y="494" width="81.2" height="14" rx="2" class="jev"/>
-<text x="227.2" y="505" class="s">96.7% · 29/30</text>
-<rect x="140" y="516" width="81.2" height="14" rx="2" class="dec"/>
-<text x="227.2" y="527" class="s">96.7% · 29/30</text>
-<line x1="140" y1="490" x2="140" y2="532" class="ln"/>
-<text x="350" y="468" class="m s">Per-task latency and Brier are not published.</text>
-<line x1="16" y1="538" x2="744" y2="538" class="ln"/>
-<text x="16" y="562" class="b">Per 1,000 requests</text>
-<rect x="176" y="551" width="12" height="12" rx="2" class="jev"/>
-<text x="194" y="562" class="s">Jev $0.026</text>
-<rect x="326" y="551" width="12" height="12" rx="2" class="dec"/>
-<text x="344" y="562" class="s">Decisions API $0.062</text>
-<rect x="536" y="551" width="12" height="12" rx="2" class="luna"/>
-<text x="554" y="562" class="s">This project ≈1.9 plan credits</text>
-<line x1="16" y1="574" x2="744" y2="574" class="ln"/>
-<text x="16" y="588" class="m s">A: accuracy, Brier and latency on 460 public tasks. Cost: rate cards at 618 input / 26 output tokens per request.</text>
-<text x="16" y="608" class="m s">B: Decision Bench v4, run 2026-10-08; Luna latency measured via OpenRouter.</text>
-<text x="16" y="628" class="m s">Brier is comparable within a panel only: A scores binary tasks as one squared error, B sums over all classes.</text>
+<text x="150" y="86" class="m s b">Correct answers</text>
+<text x="355" y="86" class="m s b">Brier (lower is better)</text>
+<text x="515" y="86" class="m s b">Median latency (p50)</text>
+<line x1="16" y1="92" x2="744" y2="92" class="ln"/>
+<text x="16" y="109" class="b">All 1,071 rows</text>
+<text x="16" y="127" class="m s">35 tasks</text>
+<text x="16" y="143" class="m s">122 image rows</text>
+<rect x="150" y="98" width="70.3" height="12" rx="2" class="jev"/>
+<text x="226.3" y="109" class="s">92.4% · 990/1071</text>
+<rect x="355" y="98" width="11.6" height="12" rx="2" class="jev"/>
+<text x="372.6" y="109" class="s">0.112</text>
+<rect x="515" y="98" width="19.3" height="12" rx="2" class="jev"/>
+<text x="540.3" y="109" class="s">0.44 s · p95 0.55 s</text>
+<rect x="150" y="114" width="68.8" height="12" rx="2" class="dec"/>
+<text x="224.8" y="125" class="s">90.5% · 969/1071</text>
+<rect x="355" y="114" width="14.3" height="12" rx="2" class="dec"/>
+<text x="375.3" y="125" class="s">0.138</text>
+<rect x="515" y="114" width="14.3" height="12" rx="2" class="dec"/>
+<text x="535.3" y="125" class="s">0.33 s · p95 0.59 s</text>
+<rect x="150" y="130" width="69.0" height="12" rx="2" class="luna"/>
+<text x="225.0" y="141" class="s">90.8% · 973/1071</text>
+<rect x="355" y="130" width="17.3" height="12" rx="2" class="luna"/>
+<text x="378.3" y="141" class="s">0.167</text>
+<rect x="515" y="130" width="76.7" height="12" rx="2" class="luna"/>
+<text x="597.7" y="141" class="s">1.74 s · p95 3.43 s</text>
+<line x1="16" y1="148" x2="744" y2="148" class="ln"/>
+<text x="16" y="165" class="b">Agents</text>
+<text x="16" y="183" class="m s">154 rows</text>
+<rect x="150" y="154" width="66.6" height="12" rx="2" class="jev"/>
+<text x="222.6" y="165" class="s">87.7%</text>
+<rect x="355" y="154" width="17.3" height="12" rx="2" class="jev"/>
+<text x="378.3" y="165" class="s">0.167</text>
+<rect x="515" y="154" width="19.4" height="12" rx="2" class="jev"/>
+<text x="540.4" y="165" class="s">0.44 s</text>
+<rect x="150" y="170" width="62.2" height="12" rx="2" class="dec"/>
+<text x="218.2" y="181" class="s">81.8%</text>
+<rect x="355" y="170" width="27.6" height="12" rx="2" class="dec"/>
+<text x="388.6" y="181" class="s">0.266</text>
+<rect x="515" y="170" width="14.3" height="12" rx="2" class="dec"/>
+<text x="535.3" y="181" class="s">0.33 s</text>
+<rect x="150" y="186" width="64.6" height="12" rx="2" class="luna"/>
+<text x="220.6" y="197" class="s">85.1%</text>
+<rect x="355" y="186" width="31.0" height="12" rx="2" class="luna"/>
+<text x="392.0" y="197" class="s">0.299</text>
+<rect x="515" y="186" width="85.3" height="12" rx="2" class="luna"/>
+<text x="606.3" y="197" class="s">1.94 s</text>
+<line x1="16" y1="204" x2="744" y2="204" class="ln"/>
+<text x="16" y="221" class="b">Commerce</text>
+<text x="16" y="239" class="m s">90 rows</text>
+<rect x="150" y="210" width="70.9" height="12" rx="2" class="jev"/>
+<text x="226.9" y="221" class="s">93.3%</text>
+<rect x="355" y="210" width="11.3" height="12" rx="2" class="jev"/>
+<text x="372.3" y="221" class="s">0.109</text>
+<rect x="515" y="210" width="19.1" height="12" rx="2" class="jev"/>
+<text x="540.1" y="221" class="s">0.43 s</text>
+<rect x="150" y="226" width="67.6" height="12" rx="2" class="dec"/>
+<text x="223.6" y="237" class="s">88.9%</text>
+<rect x="355" y="226" width="14.4" height="12" rx="2" class="dec"/>
+<text x="375.4" y="237" class="s">0.139</text>
+<rect x="515" y="226" width="14.4" height="12" rx="2" class="dec"/>
+<text x="535.4" y="237" class="s">0.33 s</text>
+<rect x="150" y="242" width="68.4" height="12" rx="2" class="luna"/>
+<text x="224.4" y="253" class="s">90.0%</text>
+<rect x="355" y="242" width="20.3" height="12" rx="2" class="luna"/>
+<text x="381.3" y="253" class="s">0.196</text>
+<rect x="515" y="242" width="82.2" height="12" rx="2" class="luna"/>
+<text x="603.2" y="253" class="s">1.87 s</text>
+<line x1="16" y1="260" x2="744" y2="260" class="ln"/>
+<text x="16" y="277" class="b">Data</text>
+<text x="16" y="295" class="m s">126 rows</text>
+<text x="16" y="311" class="m s">32 image rows</text>
+<rect x="150" y="266" width="74.8" height="12" rx="2" class="jev"/>
+<text x="230.8" y="277" class="s">98.4%</text>
+<rect x="355" y="266" width="1.9" height="12" rx="2" class="jev"/>
+<text x="362.9" y="277" class="s">0.018</text>
+<rect x="515" y="266" width="19.5" height="12" rx="2" class="jev"/>
+<text x="540.5" y="277" class="s">0.44 s</text>
+<rect x="150" y="282" width="74.2" height="12" rx="2" class="dec"/>
+<text x="230.2" y="293" class="s">97.6%</text>
+<rect x="355" y="282" width="5.2" height="12" rx="2" class="dec"/>
+<text x="366.2" y="293" class="s">0.050</text>
+<rect x="515" y="282" width="14.6" height="12" rx="2" class="dec"/>
+<text x="535.6" y="293" class="s">0.33 s</text>
+<rect x="150" y="298" width="71.2" height="12" rx="2" class="luna"/>
+<text x="227.2" y="309" class="s">93.7%</text>
+<rect x="355" y="298" width="13.0" height="12" rx="2" class="luna"/>
+<text x="374.0" y="309" class="s">0.125</text>
+<rect x="515" y="298" width="68.3" height="12" rx="2" class="luna"/>
+<text x="589.3" y="309" class="s">1.55 s</text>
+<line x1="16" y1="316" x2="744" y2="316" class="ln"/>
+<text x="16" y="333" class="b">Design</text>
+<text x="16" y="351" class="m s">30 rows</text>
+<text x="16" y="367" class="m s">30 image rows</text>
+<rect x="150" y="322" width="35.5" height="12" rx="2" class="jev"/>
+<text x="191.5" y="333" class="s">46.7%</text>
+<rect x="355" y="322" width="70.0" height="12" rx="2" class="jev"/>
+<text x="431.0" y="333" class="s">0.676</text>
+<rect x="515" y="322" width="20.3" height="12" rx="2" class="jev"/>
+<text x="541.3" y="333" class="s">0.46 s</text>
+<rect x="150" y="338" width="70.9" height="12" rx="2" class="dec"/>
+<text x="226.9" y="349" class="s">93.3%</text>
+<rect x="355" y="338" width="8.6" height="12" rx="2" class="dec"/>
+<text x="369.6" y="349" class="s">0.083</text>
+<rect x="515" y="338" width="14.1" height="12" rx="2" class="dec"/>
+<text x="535.1" y="349" class="s">0.32 s</text>
+<rect x="150" y="354" width="76.0" height="12" rx="2" class="luna"/>
+<text x="232.0" y="365" class="s">100.0%</text>
+<rect x="355" y="354" width="0.0" height="12" rx="2" class="luna"/>
+<text x="361.0" y="365" class="s">0.000</text>
+<rect x="515" y="354" width="71.4" height="12" rx="2" class="luna"/>
+<text x="592.4" y="365" class="s">1.62 s</text>
+<line x1="16" y1="372" x2="744" y2="372" class="ln"/>
+<text x="16" y="389" class="b">Documents</text>
+<text x="16" y="407" class="m s">87 rows</text>
+<text x="16" y="423" class="m s">30 image rows</text>
+<rect x="150" y="378" width="66.4" height="12" rx="2" class="jev"/>
+<text x="222.4" y="389" class="s">87.4%</text>
+<rect x="355" y="378" width="23.1" height="12" rx="2" class="jev"/>
+<text x="384.1" y="389" class="s">0.223</text>
+<rect x="515" y="378" width="20.8" height="12" rx="2" class="jev"/>
+<text x="541.8" y="389" class="s">0.47 s</text>
+<rect x="150" y="394" width="61.1" height="12" rx="2" class="dec"/>
+<text x="217.1" y="405" class="s">80.5%</text>
+<rect x="355" y="394" width="27.5" height="12" rx="2" class="dec"/>
+<text x="388.5" y="405" class="s">0.266</text>
+<rect x="515" y="394" width="14.5" height="12" rx="2" class="dec"/>
+<text x="535.5" y="405" class="s">0.33 s</text>
+<rect x="150" y="410" width="60.3" height="12" rx="2" class="luna"/>
+<text x="216.3" y="421" class="s">79.3%</text>
+<rect x="355" y="410" width="39.0" height="12" rx="2" class="luna"/>
+<text x="400.0" y="421" class="s">0.376</text>
+<rect x="515" y="410" width="68.0" height="12" rx="2" class="luna"/>
+<text x="589.0" y="421" class="s">1.55 s</text>
+<line x1="16" y1="428" x2="744" y2="428" class="ln"/>
+<text x="16" y="445" class="b">Engineering</text>
+<text x="16" y="463" class="m s">150 rows</text>
+<rect x="150" y="434" width="74.0" height="12" rx="2" class="jev"/>
+<text x="230.0" y="445" class="s">97.3%</text>
+<rect x="355" y="434" width="6.8" height="12" rx="2" class="jev"/>
+<text x="367.8" y="445" class="s">0.065</text>
+<rect x="515" y="434" width="19.1" height="12" rx="2" class="jev"/>
+<text x="540.1" y="445" class="s">0.43 s</text>
+<rect x="150" y="450" width="69.9" height="12" rx="2" class="dec"/>
+<text x="225.9" y="461" class="s">92.0%</text>
+<rect x="355" y="450" width="14.1" height="12" rx="2" class="dec"/>
+<text x="375.1" y="461" class="s">0.136</text>
+<rect x="515" y="450" width="14.6" height="12" rx="2" class="dec"/>
+<text x="535.6" y="461" class="s">0.33 s</text>
+<rect x="150" y="466" width="71.9" height="12" rx="2" class="luna"/>
+<text x="227.9" y="477" class="s">94.7%</text>
+<rect x="355" y="466" width="10.3" height="12" rx="2" class="luna"/>
+<text x="371.3" y="477" class="s">0.100</text>
+<rect x="515" y="466" width="75.1" height="12" rx="2" class="luna"/>
+<text x="596.1" y="477" class="s">1.71 s</text>
+<line x1="16" y1="484" x2="744" y2="484" class="ln"/>
+<text x="16" y="501" class="b">Finance</text>
+<text x="16" y="519" class="m s">121 rows</text>
+<text x="16" y="535" class="m s">30 image rows</text>
+<rect x="150" y="490" width="75.4" height="12" rx="2" class="jev"/>
+<text x="231.4" y="501" class="s">99.2%</text>
+<rect x="355" y="490" width="2.1" height="12" rx="2" class="jev"/>
+<text x="363.1" y="501" class="s">0.021</text>
+<rect x="515" y="490" width="18.7" height="12" rx="2" class="jev"/>
+<text x="539.7" y="501" class="s">0.42 s</text>
+<rect x="150" y="506" width="75.4" height="12" rx="2" class="dec"/>
+<text x="231.4" y="517" class="s">99.2%</text>
+<rect x="355" y="506" width="2.5" height="12" rx="2" class="dec"/>
+<text x="363.5" y="517" class="s">0.024</text>
+<rect x="515" y="506" width="14.3" height="12" rx="2" class="dec"/>
+<text x="535.3" y="517" class="s">0.32 s</text>
+<rect x="150" y="522" width="75.4" height="12" rx="2" class="luna"/>
+<text x="231.4" y="533" class="s">99.2%</text>
+<rect x="355" y="522" width="1.9" height="12" rx="2" class="luna"/>
+<text x="362.9" y="533" class="s">0.018</text>
+<rect x="515" y="522" width="90.0" height="12" rx="2" class="luna"/>
+<text x="611.0" y="533" class="s">2.05 s</text>
+<line x1="16" y1="540" x2="744" y2="540" class="ln"/>
+<text x="16" y="557" class="b">Legal</text>
+<text x="16" y="575" class="m s">126 rows</text>
+<rect x="150" y="546" width="73.0" height="12" rx="2" class="jev"/>
+<text x="229.0" y="557" class="s">96.0%</text>
+<rect x="355" y="546" width="8.6" height="12" rx="2" class="jev"/>
+<text x="369.6" y="557" class="s">0.083</text>
+<rect x="515" y="546" width="19.3" height="12" rx="2" class="jev"/>
+<text x="540.3" y="557" class="s">0.44 s</text>
+<rect x="150" y="562" width="68.8" height="12" rx="2" class="dec"/>
+<text x="224.8" y="573" class="s">90.5%</text>
+<rect x="355" y="562" width="13.5" height="12" rx="2" class="dec"/>
+<text x="374.5" y="573" class="s">0.130</text>
+<rect x="515" y="562" width="14.2" height="12" rx="2" class="dec"/>
+<text x="535.2" y="573" class="s">0.32 s</text>
+<rect x="150" y="578" width="70.6" height="12" rx="2" class="luna"/>
+<text x="226.6" y="589" class="s">92.9%</text>
+<rect x="355" y="578" width="14.6" height="12" rx="2" class="luna"/>
+<text x="375.6" y="589" class="s">0.141</text>
+<rect x="515" y="578" width="74.0" height="12" rx="2" class="luna"/>
+<text x="595.0" y="589" class="s">1.68 s</text>
+<line x1="16" y1="596" x2="744" y2="596" class="ln"/>
+<text x="16" y="613" class="b">Product</text>
+<text x="16" y="631" class="m s">60 rows</text>
+<rect x="150" y="602" width="59.5" height="12" rx="2" class="jev"/>
+<text x="215.5" y="613" class="s">78.3%</text>
+<rect x="355" y="602" width="23.5" height="12" rx="2" class="jev"/>
+<text x="384.5" y="613" class="s">0.227</text>
+<rect x="515" y="602" width="18.8" height="12" rx="2" class="jev"/>
+<text x="539.8" y="613" class="s">0.43 s</text>
+<rect x="150" y="618" width="59.5" height="12" rx="2" class="dec"/>
+<text x="215.5" y="629" class="s">78.3%</text>
+<rect x="355" y="618" width="25.6" height="12" rx="2" class="dec"/>
+<text x="386.6" y="629" class="s">0.248</text>
+<rect x="515" y="618" width="14.2" height="12" rx="2" class="dec"/>
+<text x="535.2" y="629" class="s">0.32 s</text>
+<rect x="150" y="634" width="53.2" height="12" rx="2" class="luna"/>
+<text x="209.2" y="645" class="s">70.0%</text>
+<rect x="355" y="634" width="42.4" height="12" rx="2" class="luna"/>
+<text x="403.4" y="645" class="s">0.409</text>
+<rect x="515" y="634" width="64.1" height="12" rx="2" class="luna"/>
+<text x="585.1" y="645" class="s">1.46 s</text>
+<line x1="16" y1="652" x2="744" y2="652" class="ln"/>
+<text x="16" y="669" class="b">Safety</text>
+<text x="16" y="687" class="m s">60 rows</text>
+<rect x="150" y="658" width="73.5" height="12" rx="2" class="jev"/>
+<text x="229.5" y="669" class="s">96.7%</text>
+<rect x="355" y="658" width="4.7" height="12" rx="2" class="jev"/>
+<text x="365.7" y="669" class="s">0.045</text>
+<rect x="515" y="658" width="18.8" height="12" rx="2" class="jev"/>
+<text x="539.8" y="669" class="s">0.43 s</text>
+<rect x="150" y="674" width="73.5" height="12" rx="2" class="dec"/>
+<text x="229.5" y="685" class="s">96.7%</text>
+<rect x="355" y="674" width="7.8" height="12" rx="2" class="dec"/>
+<text x="368.8" y="685" class="s">0.075</text>
+<rect x="515" y="674" width="14.1" height="12" rx="2" class="dec"/>
+<text x="535.1" y="685" class="s">0.32 s</text>
+<rect x="150" y="690" width="73.5" height="12" rx="2" class="luna"/>
+<text x="229.5" y="701" class="s">96.7%</text>
+<rect x="355" y="690" width="6.2" height="12" rx="2" class="luna"/>
+<text x="367.2" y="701" class="s">0.060</text>
+<rect x="515" y="690" width="80.7" height="12" rx="2" class="luna"/>
+<text x="601.7" y="701" class="s">1.84 s</text>
+<line x1="16" y1="708" x2="744" y2="708" class="ln"/>
+<text x="16" y="725" class="b">Support</text>
+<text x="16" y="743" class="m s">67 rows</text>
+<rect x="150" y="714" width="73.7" height="12" rx="2" class="jev"/>
+<text x="229.7" y="725" class="s">97.0%</text>
+<rect x="355" y="714" width="5.2" height="12" rx="2" class="jev"/>
+<text x="366.2" y="725" class="s">0.051</text>
+<rect x="515" y="714" width="18.9" height="12" rx="2" class="jev"/>
+<text x="539.9" y="725" class="s">0.43 s</text>
+<rect x="150" y="730" width="73.7" height="12" rx="2" class="dec"/>
+<text x="229.7" y="741" class="s">97.0%</text>
+<rect x="355" y="730" width="5.3" height="12" rx="2" class="dec"/>
+<text x="366.3" y="741" class="s">0.051</text>
+<rect x="515" y="730" width="14.2" height="12" rx="2" class="dec"/>
+<text x="535.2" y="741" class="s">0.32 s</text>
+<rect x="150" y="746" width="73.7" height="12" rx="2" class="luna"/>
+<text x="229.7" y="757" class="s">97.0%</text>
+<rect x="355" y="746" width="6.7" height="12" rx="2" class="luna"/>
+<text x="367.7" y="757" class="s">0.065</text>
+<rect x="515" y="746" width="82.7" height="12" rx="2" class="luna"/>
+<text x="603.7" y="757" class="s">1.88 s</text>
+<line x1="150" y1="94" x2="150" y2="764" class="ln"/>
+<line x1="355" y1="94" x2="355" y2="764" class="ln"/>
+<line x1="515" y1="94" x2="515" y2="764" class="ln"/>
+<line x1="16" y1="764" x2="744" y2="764" class="ln"/>
+<text x="16" y="784" class="m s">Decision Bench v4: 1,071 rows, the same rows for all three series; ours run 2026-10-13, build 3a86e9e.</text>
+<text x="16" y="804" class="m s">Jev scored the 122 image rows from text renderings; on the 949 text rows: Jev 93.2%, this project 89.8%.</text>
+<text x="16" y="824" class="m s">Decisions API latency was measured by a third party via OpenRouter; ours on one machine through Codex.</text>
 </svg>

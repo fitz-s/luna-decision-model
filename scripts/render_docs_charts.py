@@ -11,7 +11,9 @@ ASSETS = ROOT / 'docs/assets'
 SUITES = [('risk', 'Risk', 'multiclass'), ('toxicity', 'Toxicity', 'binary'), ('tool_select', 'Tool selection', 'multiclass')]  # Brier kind: docs/COMPARISON.md
 
 # Palette: dataviz reference slots 1 (blue) and 2 (orange) plus purple for the Decisions API, validated in light and dark.
-TITLE = 'LLM decision model: Jev-level accuracy, no per-request bill, ~1 s per call'
+TITLE_SECONDS = 1.7  # this project's measured p50 on Decision Bench v4, checked in comparison()
+TITLE = f'LLM decision model: near-Jev accuracy, no per-request bill, ~{TITLE_SECONDS} s per call'
+SERIES = {'jev': 'jev', 'luna_decisions': 'dec', 'ours': 'luna'}  # data key -> CSS class
 CSS = """:root{color-scheme:light dark;--ink:#1f2328;--mute:#59636e;--line:#d1d9e0;--luna:#2a78d6;--jev:#eb6834;--cloud:#0f6cbd;--api:#6e7781;--dec:#8250df}
 @media (prefers-color-scheme:dark){:root{--ink:#e6edf3;--mute:#9198a1;--line:#3d444d;--luna:#3987e5;--jev:#d95926;--cloud:#58a6ff;--api:#8b949e;--dec:#a371f7}}
 text{font:14px -apple-system,BlinkMacSystemFont,"Segoe UI",Helvetica,Arial,sans-serif;fill:var(--ink)}
@@ -59,89 +61,55 @@ def architecture():
 
 
 def comparison(data):
-    rows = {k: data['datasets'][k] for k, _, _ in SUITES}
-    ms = {(k, side): rows[k][side]['p50_ms'] for k, _, _ in SUITES for side in ('luna', 'jev')}
-    gaps = [abs(r['luna']['accuracy'] - r['jev']['accuracy']) for r in rows.values()]
     v4 = data['decision_bench_v4']
-    jev4, api4 = v4['overall']['jev'], v4['overall']['luna_decisions']
+    ov, gr = v4['overall'], v4['groups']
     rates = data['pricing']['rates']['product_subscription']
-    # Title claims: Jev-level accuracy (<= 2 pp on our suites and on Decision Bench v4), ~1 s p50 on this project (slower than Jev), no per-request price.
-    if (max(gaps) > 0.02 or abs(jev4['accuracy'] - api4['accuracy']) > 0.02 or any(not ms[k, 'jev'] < ms[k, 'luna'] < 1500 for k in rows)
+    # Title claims: near-Jev accuracy (<= 2 pp overall on Decision Bench v4), the stated seconds per call (measured p50 of this project), no per-request price.
+    if (abs(ov['ours']['accuracy'] - ov['jev']['accuracy']) > 0.02 or abs(ov['ours']['p50_ms'] / 1000 - TITLE_SECONDS) > 0.25
             or rates['input_per_million'] is not None or rates['output_per_million'] is not None):
-        sys.exit('comparison-data.json no longer supports the chart title; rewrite the message')
-    if jev4['rows'] != api4['rows'] or jev4['rows'] != v4['rows']:
-        sys.exit('Decision Bench v4 panel needs identical rows for both models')
-    title = TITLE
-    c1, c2, c3, aw = 140, 350, 605, 84
-    p50 = max(list(ms.values()) + [jev4['p50_ms'], api4['p50_ms']])
-    brier_a = max(r[s]['brier'] for r in rows.values() for s in ('luna', 'jev'))
-    brier_b = max(jev4['brier'], api4['brier'])
-    _, _, usd, credits, _ = cost_per_1000(data)
+        sys.exit('comparison-data.json no longer supports the chart title; rewrite the title')
+    if any(ov[k]['rows'] != v4['rows'] for k in SERIES) or sum(g['rows'] for g in gr.values()) != v4['rows'] or len(v4['tasks']) != v4['task_count']:
+        sys.exit('Decision Bench v4 needs identical rows for all three series and groups that add up to the corpus')
+    xa, xb, xl, row_h, bw = 150, 355, 515, 56, 12
+    brier_max = max(s['brier'] for g in [ov] + list(gr.values()) for s in (g[k] for k in SERIES))
+    p50_max = max(s['p50_ms'] for g in [ov] + list(gr.values()) for s in (g[k] for k in SERIES))
 
     def bar(x, y, w, cls):
-        return f'<rect x="{x}" y="{y}" width="{w:.1f}" height="14" rx="2" class="{cls}"/>'
+        return f'<rect x="{x}" y="{y}" width="{w:.1f}" height="{bw}" rx="2" class="{cls}"/>'
 
-    def metrics(y, side, acc, lat, brier, bscale):
-        """One series' bars on one row: accuracy, p50 latency and Brier (None leaves the cell empty)."""
-        ty = y + 11
-        out = [bar(c1, y, aw * acc['accuracy'], side), text(c1 + aw * acc['accuracy'] + 6, ty, f'{100 * acc["accuracy"]:.1f}% · {acc["correct"]}/{acc.get("n", acc.get("rows"))}', 's')]
-        if lat is not None:
-            out += [bar(c2, y, 90 * lat / p50, side), text(c2 + 90 * lat / p50 + 6, ty, f'{lat / 1000:.2f} s', 's')]
-        if brier is not None:
-            out += [bar(c3, y, 80 * brier / bscale, side), text(c3 + 80 * brier / bscale + 6, ty, f'{brier:.3f}', 's')]
+    def row(y, name, subs, g, wide):
+        out = [f'<line x1="16" y1="{y - 6}" x2="744" y2="{y - 6}" class="ln"/>', text(16, y + 11, name, 'b')]
+        out += [text(16, y + 29 + 16 * i, sub, 'm s') for i, sub in enumerate(subs)]
+        for j, (key, cls) in enumerate(SERIES.items()):
+            d, by = g[key], y + 16 * j
+            ty = by + 11
+            wa, wb, wl = 76 * d['accuracy'], 70 * d['brier'] / brier_max, 90 * d['p50_ms'] / p50_max
+            acc = f'{100 * d["accuracy"]:.1f}%' + (f' · {d["correct"]}/{d["rows"]}' if wide else '')
+            lat = f'{d["p50_ms"] / 1000:.2f} s' + (f' · p95 {d["p95_ms"] / 1000:.2f} s' if wide else '')
+            out += [bar(xa, by, wa, cls), text(f'{xa + wa + 6:.1f}', ty, acc, 's'), bar(xb, by, wb, cls), text(f'{xb + wb + 6:.1f}', ty, f'{d["brier"]:.3f}', 's'),
+                    bar(xl, by, wl, cls), text(f'{xl + wl + 6:.1f}', ty, lat, 's')]
         return out
 
-    def rules(y, h, cols=(c1, c2, c3)):
-        return [f'<line x1="{c}" y1="{y - 4}" x2="{c}" y2="{y + h}" class="ln"/>' for c in cols]
-
-    def heads(y):
-        return [text(c1, y, 'Correct answers', 'm s b'), text(c2, y, 'Median latency (p50)', 'm s b'), text(c3, y, 'Brier (lower is better)', 'm s b')]
-
-    sw = [(16, 'jev', 'Jev (native)'), (156, 'dec', 'GPT-6 Luna · Decisions API'), (368, 'luna', 'GPT-6 Luna · this project')]
-    g = [text(16, 28, escape(title), 'h')]
-    for x, cls, label in sw:
-        g += [f'<rect x="{x}" y="46" width="12" height="12" rx="2" class="{cls}"/>', text(x + 18, 57, label, 's')]
-    # Panel A: our 460 public tasks, Jev vs this project.
-    g += [text(16, 92, 'A · Our 460 public tasks: Jev vs this project', 'b')] + heads(114)
-    for i, (key, name, kind) in enumerate(SUITES):
-        y = 128 + 60 * i
-        r = rows[key]
-        g += [f'<line x1="16" y1="{y - 8}" x2="744" y2="{y - 8}" class="ln"/>', text(16, y + 15, name, 'b'), text(16, y + 33, f'{kind} Brier', 'm s')]
-        for j, side in enumerate(('jev', 'luna')):
-            d = r[side]
-            g += metrics(y + 22 * j, side, d, ms[key, side], d['brier'], brier_a)
-        g += rules(y, 38)
-    # Panel B: same model through the Decisions API, identical rows.
-    yb = 128 + 60 * 3
-    g += [f'<line x1="16" y1="{yb - 8}" x2="744" y2="{yb - 8}" class="ln"/>',
-          text(16, yb + 18, 'B · Same model through the Decisions API: independent run, Decision Bench v4', 'b'),
-          text(16, yb + 36, f'Jev vs Luna Decisions API on the same {jev4["rows"]:,} rows.', 'm s')] + heads(yb + 60)
-    y = yb + 74
-    g += [f'<line x1="16" y1="{y - 8}" x2="744" y2="{y - 8}" class="ln"/>', text(16, y + 15, 'All tasks', 'b'), text(16, y + 33, f'{jev4["rows"]:,} rows', 'm s')]
-    for j, (side, d) in enumerate((('jev', jev4), ('dec', api4))):
-        g += metrics(y + 22 * j, side, d, d['p50_ms'], d['brier'], brier_b)
-    g += rules(y, 38)
-    for i, tid in enumerate(('AGT-1', 'SAF-2')):
-        y = yb + 74 + 60 + 52 * i
-        t = v4['tasks'][tid]
-        g += [f'<line x1="16" y1="{y - 8}" x2="744" y2="{y - 8}" class="ln"/>', text(16, y + 15, tid, 'b'), text(16, y + 33, t['name'].replace(' or not', ''), 'm s')]
-        for j, (side, key) in enumerate((('jev', 'jev'), ('dec', 'luna_decisions'))):
-            g += metrics(y + 22 * j, side, t[key], None, None, 1)
-        g += rules(y, 38, (c1,))
-    g.append(text(c2, yb + 74 + 60 + 26, 'Per-task latency and Brier are not published.', 'm s'))
-    # Cost strip and sources.
-    yc = yb + 74 + 60 + 104 - 8
-    g += [f'<line x1="16" y1="{yc}" x2="744" y2="{yc}" class="ln"/>', text(16, yc + 24, 'Per 1,000 requests', 'b')]
-    for x, cls, label in ((176, 'jev', f'Jev ${usd["typesafe_jev"]:.3f}'), (326, 'dec', f'Decisions API ${usd["openai_decisions"]:.3f}'),
-                          (536, 'luna', f'This project ≈{credits:.1f} plan credits')):
-        g += [f'<rect x="{x}" y="{yc + 13}" width="12" height="12" rx="2" class="{cls}"/>', text(x + 18, yc + 24, label, 's')]
-    ys = yc + 50
-    g += [f'<line x1="16" y1="{ys - 14}" x2="744" y2="{ys - 14}" class="ln"/>',
-          text(16, ys, 'A: accuracy, Brier and latency on 460 public tasks. Cost: rate cards at 618 input / 26 output tokens per request.', 'm s'),
-          text(16, ys + 20, 'B: Decision Bench v4, run 2026-10-08; Luna latency measured via OpenRouter.', 'm s'),
-          text(16, ys + 40, 'Brier is comparable within a panel only: A scores binary tasks as one squared error, B sums over all classes.', 'm s')]
-    return svg(760, ys + 50, title,
-               'Jev, GPT-6 Luna through the Decisions API and through Luna Decision Model: accuracy, median latency and Brier score, plus cost.',
+    g = [text(16, 28, escape(TITLE), 'h')]
+    for x, (key, cls) in zip((16, 156, 368), SERIES.items()):
+        g += [f'<rect x="{x}" y="46" width="12" height="12" rx="2" class="{cls}"/>', text(x + 18, 57, v4['series'][key]['label'].replace(', ', ' · '), 's')]
+    g += [text(xa, 86, 'Correct answers', 'm s b'), text(xb, 86, 'Brier (lower is better)', 'm s b'), text(xl, 86, 'Median latency (p50)', 'm s b')]
+    y0 = 98
+    rows = [('All %s rows' % f'{v4["rows"]:,}', [f'{v4["task_count"]} tasks', f'{v4["by_modality"]["image_rows"]["rows"]} image rows'], ov, True)]
+    for pre, grp in gr.items():
+        rows.append((grp['label'], [f'{grp["rows"]} rows'] + ([f'{grp["image_rows"]} image rows'] if grp['image_rows'] else []), grp, False))
+    for i, (name, subs, d, wide) in enumerate(rows):
+        g += row(y0 + row_h * i, name, subs, d, wide)
+    yb = y0 + row_h * len(rows)
+    for x in (xa, xb, xl):
+        g.append(f'<line x1="{x}" y1="{y0 - 4}" x2="{x}" y2="{yb - 6}" class="ln"/>')
+    ncorp = v4['run']
+    g += [f'<line x1="16" y1="{yb - 6}" x2="744" y2="{yb - 6}" class="ln"/>',
+          text(16, yb + 14, f'Decision Bench v4: {v4["rows"]:,} rows, the same rows for all three series; ours run {ncorp["date_utc"]}, build {ncorp["build_commit"]}.', 'm s'),
+          text(16, yb + 34, (lambda m: f'Jev scored the {m["image_rows"]["rows"]} image rows from text renderings; on the {m["text_rows"]["rows"]} text rows: Jev {100*m["text_rows"]["jev"]["accuracy"]:.1f}%, this project {100*m["text_rows"]["ours"]["accuracy"]:.1f}%.')(v4['by_modality']), 'm s'),
+          text(16, yb + 54, 'Decisions API latency was measured by a third party via OpenRouter; ours on one machine through Codex.', 'm s')]
+    return svg(760, yb + 66, TITLE,
+               'Accuracy, Brier score and median latency of Jev, GPT-6 Luna through the Decisions API and through Luna Decision Model on Decision Bench v4.',
                '\n'.join(g))
 
 

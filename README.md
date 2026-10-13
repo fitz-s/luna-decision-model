@@ -26,9 +26,9 @@ Luna Decision Model runs these same callers on GPT-6 Luna through your Codex sub
 
 ## Benchmark
 
-![Jev, GPT-6 Luna through the Decisions API and through this project: accuracy, median latency and Brier on 460 public tasks and on Decision Bench v4, with cost per 1,000 requests.](docs/assets/public-comparison.svg)
+![Decision Bench v4, 1,071 rows: accuracy, Brier and median latency of native Jev, GPT-6 Luna through the Decisions API and GPT-6 Luna through this project, overall and by task group.](docs/assets/public-comparison.svg)
 
-p95 latency, calibration detail and rate sources: [docs/COMPARISON.md](docs/COMPARISON.md). Your own plan's usage: [docs/QUOTA.md](docs/QUOTA.md).
+Per-task results, run details, reasoning effort and rate sources: [docs/COMPARISON.md](docs/COMPARISON.md). Your own plan's usage: [docs/QUOTA.md](docs/QUOTA.md).
 
 ## Quickstart
 

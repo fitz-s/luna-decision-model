@@ -551,9 +551,27 @@
     "suite": "bench-v4",
     "corpus_sha256": "3599baea0d9c7e4e3d86c8b06af96e6850edca037b334bbc6b4e1a0033021725",
     "rows": 1071,
-    "scope": "Independent third-party run of the same model through the Decisions API, not our suites and not paired with the public-460 run. Latency is observed end-to-end time from the benchmark harness; the Luna Decisions run went through OpenRouter.",
-    "brier_definition": "Per row, sum over all classes of (p_class - 1[class is gold])^2, averaged over rows with a valid answer and probabilities, pooled over all 35 tasks (decision_bench/scoring.py at the harness commit). For binary tasks this is twice the single squared error used for binary suites in the public-460 data, so it is never plotted on the same axis.",
+    "task_count": 35,
+    "scope": "Three series scored on the same 1,071 rows with the benchmark's own scoring code, unchanged. Jev 1.13 and Luna through the Decisions API are the benchmark's published runs; Luna through this project was run locally on 2026-10-13. Not paired in time, route or machine, and not the public-460 suites.",
+    "brier_definition": "Per row, sum over all classes of (p_class - 1[class is gold])^2, averaged over rows with a valid answer and probabilities (decision_bench/scoring.py at the harness commit). For binary tasks this is twice a single squared error, so it is not comparable with the Brier values of the public-460 suites.",
     "brier_definition_source": "https://github.com/atlanai/decision-bench/blob/9cac8f8acd256512a4fec8ee499f97da7eea861c/decision_bench/scoring.py",
+    "series": {
+      "jev": {
+        "label": "Jev native",
+        "model_id": "jev-1.13",
+        "origin": "published run"
+      },
+      "luna_decisions": {
+        "label": "GPT-6 Luna, Decisions API",
+        "model_id": "gpt-6-luna-decisions",
+        "origin": "published run"
+      },
+      "ours": {
+        "label": "GPT-6 Luna, this project",
+        "model_id": "gpt-6-luna-ldm",
+        "origin": "local run, Codex subscription"
+      }
+    },
     "sources": {
       "luna_decisions": {
         "model_id": "gpt-6-luna-decisions",
@@ -577,62 +595,1752 @@
         "readme_url": "https://raw.githubusercontent.com/atlanai/decision-bench/8d1563c8740600367172f4bffd2858f400bdd32d/results/bench-v4/jev-1.13/README.md"
       }
     },
+    "run": {
+      "run_id": "20261013T160021Z",
+      "date_utc": "2026-10-13",
+      "harness_run_id": "gpt-6-luna-ldm-bench-v4-1c2da117",
+      "build_commit": "3a86e9e",
+      "build_commit_full": "3a86e9e44bdae2ac453e629f54cbd93851237e8f",
+      "build_sha256": "fbd8ac27b9c1b9814f991b5aa4695304a3b46f4a7c7d92a130153a53eff806f1",
+      "harness_repo": "https://github.com/atlanai/decision-bench",
+      "harness_commit": "8d1563c8740600367172f4bffd2858f400bdd32d",
+      "corpus_sha256": "3599baea0d9c7e4e3d86c8b06af96e6850edca037b334bbc6b4e1a0033021725",
+      "codex_cli": "codex-cli 0.159.0",
+      "wire": "auto",
+      "wire_rows": {
+        "systemone": 949,
+        "decisions": 122
+      },
+      "jobs": 3,
+      "timeout_s": 180,
+      "max_attempts": 3,
+      "service_tier": "default",
+      "reasoning_effort": "auto",
+      "capture_attempts": 1075
+    },
+    "caveats": {
+      "jev_images": "Jev 1.13 has no vision input: it scored the 122 image rows (DAT-3, DOC-1, DSN-1, FIN-3) from text renderings. Both Luna series were sent the images.",
+      "api_latency_route": "Luna through the Decisions API was timed by the benchmark authors through OpenRouter on their machines, Jev by its own harness; ours is local wall time on one machine through the Codex app-server and the ChatGPT backend.",
+      "ours_errors": "One row (PRD-1) ended in an invalid_output error after 3 attempts and counts as wrong in every metric.",
+      "not_paired": "Series differ in run date (2026-09-23, 2026-10-08, 2026-10-13), harness commit and machine."
+    },
     "overall": {
       "jev": {
         "rows": 1071,
         "correct": 990,
         "accuracy": 0.9243697478991597,
         "wilson95": [
-          0.9069732206842946,
-          0.9387327884616112
+          0.9069735696299148,
+          0.9387325505985944
         ],
         "brier": 0.1119507328231432,
+        "ece": 0.013102453102453044,
         "p50_ms": 438.5520829819143,
-        "p95_ms": 545.4284790030215
+        "p95_ms": 545.4284790030215,
+        "errors": 0
       },
       "luna_decisions": {
         "rows": 1071,
         "correct": 969,
         "accuracy": 0.9047619047619048,
         "wilson95": [
-          0.8857065548896963,
-          0.9209239290811513
+          0.8857069324481446,
+          0.9209236574727766
         ],
         "brier": 0.13830214752567693,
+        "ece": 0.02079365079365079,
         "p50_ms": 325.5317920120433,
-        "p95_ms": 585.462145972997
+        "p95_ms": 585.462145972997,
+        "errors": 0
+      },
+      "ours": {
+        "rows": 1071,
+        "correct": 973,
+        "accuracy": 0.9084967320261438,
+        "wilson95": [
+          0.8897382856887283,
+          0.9243352623860192
+        ],
+        "brier": 0.1674517449622803,
+        "ece": 0.0739353534282618,
+        "p50_ms": 1744.1282080253586,
+        "p95_ms": 3428.191167069599,
+        "errors": 1
+      }
+    },
+    "by_modality": {
+      "text_rows": {
+        "rows": 949,
+        "jev": {
+          "correct": 884,
+          "accuracy": 0.9315068493150684,
+          "brier": 0.10497655773496371
+        },
+        "luna_decisions": {
+          "correct": 849,
+          "accuracy": 0.8946259220231823,
+          "brier": 0.1528059009483667
+        },
+        "ours": {
+          "correct": 852,
+          "accuracy": 0.8977871443624869,
+          "brier": 0.18688695144118317
+        }
+      },
+      "image_rows": {
+        "rows": 122,
+        "jev": {
+          "correct": 106,
+          "accuracy": 0.8688524590163934,
+          "brier": 0.16620066855004761
+        },
+        "luna_decisions": {
+          "correct": 120,
+          "accuracy": 0.9836065573770492,
+          "brier": 0.025481967213114753
+        },
+        "ours": {
+          "correct": 121,
+          "accuracy": 0.9918032786885246,
+          "brier": 0.01643063232293674
+        }
+      }
+    },
+    "groups": {
+      "AGT": {
+        "label": "Agents",
+        "rows": 154,
+        "image_rows": 0,
+        "jev": {
+          "rows": 154,
+          "correct": 135,
+          "accuracy": 0.8766233766233766,
+          "brier": 0.16681558441558442,
+          "p50_ms": 441.4401460089721,
+          "p95_ms": 543.28926478629,
+          "errors": 0
+        },
+        "luna_decisions": {
+          "rows": 154,
+          "correct": 126,
+          "accuracy": 0.8181818181818182,
+          "brier": 0.2664818181818182,
+          "p50_ms": 325.73993754340336,
+          "p95_ms": 885.3979252104181,
+          "errors": 0
+        },
+        "ours": {
+          "rows": 154,
+          "correct": 131,
+          "accuracy": 0.8506493506493507,
+          "brier": 0.2991250094184258,
+          "p50_ms": 1939.0860624844208,
+          "p95_ms": 5052.945443743374,
+          "errors": 0
+        }
+      },
+      "COM": {
+        "label": "Commerce",
+        "rows": 90,
+        "image_rows": 0,
+        "jev": {
+          "rows": 90,
+          "correct": 84,
+          "accuracy": 0.9333333333333333,
+          "brier": 0.10878806539015294,
+          "p50_ms": 433.97956201806664,
+          "p95_ms": 527.8102898097131,
+          "errors": 0
+        },
+        "luna_decisions": {
+          "rows": 90,
+          "correct": 80,
+          "accuracy": 0.8888888888888888,
+          "brier": 0.13898,
+          "p50_ms": 326.8978539854288,
+          "p95_ms": 399.50687904492946,
+          "errors": 0
+        },
+        "ours": {
+          "rows": 90,
+          "correct": 81,
+          "accuracy": 0.9,
+          "brier": 0.19626070617862865,
+          "p50_ms": 1870.240417018067,
+          "p95_ms": 3382.2036349505647,
+          "errors": 0
+        }
+      },
+      "DAT": {
+        "label": "Data",
+        "rows": 126,
+        "image_rows": 32,
+        "jev": {
+          "rows": 126,
+          "correct": 124,
+          "accuracy": 0.9841269841269841,
+          "brier": 0.018246031746031746,
+          "p50_ms": 443.0029590148479,
+          "p95_ms": 587.2814172616927,
+          "errors": 0
+        },
+        "luna_decisions": {
+          "rows": 126,
+          "correct": 123,
+          "accuracy": 0.9761904761904762,
+          "brier": 0.05024920634920635,
+          "p50_ms": 331.18079201085493,
+          "p95_ms": 473.431760474341,
+          "errors": 0
+        },
+        "ours": {
+          "rows": 126,
+          "correct": 118,
+          "accuracy": 0.9365079365079365,
+          "brier": 0.1251884501068038,
+          "p50_ms": 1554.1344375233166,
+          "p95_ms": 2495.1952607370913,
+          "errors": 0
+        }
+      },
+      "DSN": {
+        "label": "Design",
+        "rows": 30,
+        "image_rows": 30,
+        "jev": {
+          "rows": 30,
+          "correct": 14,
+          "accuracy": 0.4666666666666667,
+          "brier": 0.6757360521035269,
+          "p50_ms": 461.04483303497545,
+          "p95_ms": 559.1364626132417,
+          "errors": 0
+        },
+        "luna_decisions": {
+          "rows": 30,
+          "correct": 28,
+          "accuracy": 0.9333333333333333,
+          "brier": 0.08303333333333333,
+          "p50_ms": 321.6216039727442,
+          "p95_ms": 384.8002999904565,
+          "errors": 0
+        },
+        "ours": {
+          "rows": 30,
+          "correct": 30,
+          "accuracy": 1.0,
+          "brier": 0.0,
+          "p50_ms": 1624.7559584444389,
+          "p95_ms": 2251.896629336988,
+          "errors": 0
+        }
+      },
+      "DOC": {
+        "label": "Documents",
+        "rows": 87,
+        "image_rows": 30,
+        "jev": {
+          "rows": 87,
+          "correct": 76,
+          "accuracy": 0.8735632183908046,
+          "brier": 0.22281739888141838,
+          "p50_ms": 471.95683303289115,
+          "p95_ms": 718.0756954709071,
+          "errors": 0
+        },
+        "luna_decisions": {
+          "rows": 87,
+          "correct": 70,
+          "accuracy": 0.8045977011494253,
+          "brier": 0.26574022988505747,
+          "p50_ms": 330.13904199469835,
+          "p95_ms": 538.1449294975029,
+          "errors": 0
+        },
+        "ours": {
+          "rows": 87,
+          "correct": 69,
+          "accuracy": 0.7931034482758621,
+          "brier": 0.37600867432935503,
+          "p50_ms": 1546.741749974899,
+          "p95_ms": 4080.884420603983,
+          "errors": 0
+        }
+      },
+      "ENG": {
+        "label": "Engineering",
+        "rows": 150,
+        "image_rows": 0,
+        "jev": {
+          "rows": 150,
+          "correct": 146,
+          "accuracy": 0.9733333333333334,
+          "brier": 0.06548609135122266,
+          "p50_ms": 434.5181255484931,
+          "p95_ms": 541.615655942587,
+          "errors": 0
+        },
+        "luna_decisions": {
+          "rows": 150,
+          "correct": 138,
+          "accuracy": 0.92,
+          "brier": 0.13633866666666666,
+          "p50_ms": 331.0386459925212,
+          "p95_ms": 853.4136144036886,
+          "errors": 0
+        },
+        "ours": {
+          "rows": 150,
+          "correct": 142,
+          "accuracy": 0.9466666666666667,
+          "brier": 0.09969482821511236,
+          "p50_ms": 1707.4752290500328,
+          "p95_ms": 3018.562116869723,
+          "errors": 0
+        }
+      },
+      "FIN": {
+        "label": "Finance",
+        "rows": 121,
+        "image_rows": 30,
+        "jev": {
+          "rows": 121,
+          "correct": 120,
+          "accuracy": 0.9917355371900827,
+          "brier": 0.02074876033057851,
+          "p50_ms": 424.5493750204332,
+          "p95_ms": 506.85383402742445,
+          "errors": 0
+        },
+        "luna_decisions": {
+          "rows": 121,
+          "correct": 120,
+          "accuracy": 0.9917355371900827,
+          "brier": 0.024335537190082645,
+          "p50_ms": 324.12120897788554,
+          "p95_ms": 565.6855000415817,
+          "errors": 0
+        },
+        "ours": {
+          "rows": 121,
+          "correct": 120,
+          "accuracy": 0.9917355371900827,
+          "brier": 0.017881259185175254,
+          "p50_ms": 2046.6699589742348,
+          "p95_ms": 3184.476250084117,
+          "errors": 0
+        }
+      },
+      "LEG": {
+        "label": "Legal",
+        "rows": 126,
+        "image_rows": 0,
+        "jev": {
+          "rows": 126,
+          "correct": 121,
+          "accuracy": 0.9603174603174603,
+          "brier": 0.0826888888888889,
+          "p50_ms": 439.035707997391,
+          "p95_ms": 526.3593639974715,
+          "errors": 0
+        },
+        "luna_decisions": {
+          "rows": 126,
+          "correct": 114,
+          "accuracy": 0.9047619047619048,
+          "brier": 0.13032539682539682,
+          "p50_ms": 322.3216870101169,
+          "p95_ms": 373.6376253073104,
+          "errors": 0
+        },
+        "ours": {
+          "rows": 126,
+          "correct": 117,
+          "accuracy": 0.9285714285714286,
+          "brier": 0.14093087276451532,
+          "p50_ms": 1682.8334375168197,
+          "p95_ms": 2927.89445843664,
+          "errors": 0
+        }
+      },
+      "PRD": {
+        "label": "Product",
+        "rows": 60,
+        "image_rows": 0,
+        "jev": {
+          "rows": 60,
+          "correct": 47,
+          "accuracy": 0.7833333333333333,
+          "brier": 0.22674666666666668,
+          "p50_ms": 428.55402099667117,
+          "p95_ms": 517.2179101384244,
+          "errors": 0
+        },
+        "luna_decisions": {
+          "rows": 60,
+          "correct": 47,
+          "accuracy": 0.7833333333333333,
+          "brier": 0.24757,
+          "p50_ms": 322.5074784713797,
+          "p95_ms": 408.08946808101535,
+          "errors": 0
+        },
+        "ours": {
+          "rows": 60,
+          "correct": 42,
+          "accuracy": 0.7,
+          "brier": 0.40937735489236754,
+          "p50_ms": 1457.155666546896,
+          "p95_ms": 2838.078227726509,
+          "errors": 1
+        }
+      },
+      "SAF": {
+        "label": "Safety",
+        "rows": 60,
+        "image_rows": 0,
+        "jev": {
+          "rows": 60,
+          "correct": 58,
+          "accuracy": 0.9666666666666667,
+          "brier": 0.04531,
+          "p50_ms": 427.4071874679066,
+          "p95_ms": 496.092657695408,
+          "errors": 0
+        },
+        "luna_decisions": {
+          "rows": 60,
+          "correct": 58,
+          "accuracy": 0.9666666666666667,
+          "brier": 0.07532333333333334,
+          "p50_ms": 320.11854148004204,
+          "p95_ms": 380.9955961303785,
+          "errors": 0
+        },
+        "ours": {
+          "rows": 60,
+          "correct": 58,
+          "accuracy": 0.9666666666666667,
+          "brier": 0.06003716051173073,
+          "p50_ms": 1836.0722085344605,
+          "p95_ms": 3316.2908267928283,
+          "errors": 0
+        }
+      },
+      "SUP": {
+        "label": "Support",
+        "rows": 67,
+        "image_rows": 0,
+        "jev": {
+          "rows": 67,
+          "correct": 65,
+          "accuracy": 0.9701492537313433,
+          "brier": 0.05054925373134329,
+          "p50_ms": 428.8880830281414,
+          "p95_ms": 510.4884207015856,
+          "errors": 0
+        },
+        "luna_decisions": {
+          "rows": 67,
+          "correct": 65,
+          "accuracy": 0.9701492537313433,
+          "brier": 0.051394029850746266,
+          "p50_ms": 321.94291707128286,
+          "p95_ms": 586.9755208608681,
+          "errors": 0
+        },
+        "ours": {
+          "rows": 67,
+          "correct": 65,
+          "accuracy": 0.9701492537313433,
+          "brier": 0.0645897401740162,
+          "p50_ms": 1879.8434999771416,
+          "p95_ms": 3432.083812297787,
+          "errors": 0
+        }
       }
     },
     "tasks": {
       "AGT-1": {
-        "luna_decisions": {
-          "rows": 36,
-          "correct": 35,
-          "accuracy": 0.9722222222222222
-        },
         "name": "Which tool to call",
+        "rows": 36,
+        "source_dataset": "BFCL",
         "jev": {
           "rows": 36,
           "correct": 35,
-          "accuracy": 0.9722222222222222
+          "accuracy": 0.9722222222222222,
+          "brier": 0.048522222222222224,
+          "p50_ms": 436.7604170111008,
+          "p95_ms": 554.8563432676019,
+          "errors": 0
         },
-        "source_dataset": "BFCL"
+        "luna_decisions": {
+          "rows": 36,
+          "correct": 35,
+          "accuracy": 0.9722222222222222,
+          "brier": 0.052444444444444446,
+          "p50_ms": 320.84743748418987,
+          "p95_ms": 497.3482807399705,
+          "errors": 0
+        },
+        "ours": {
+          "rows": 36,
+          "correct": 36,
+          "accuracy": 1.0,
+          "brier": 5.446089163371787e-06,
+          "p50_ms": 1957.0527710602619,
+          "p95_ms": 3163.095510477433,
+          "errors": 0
+        }
+      },
+      "AGT-2": {
+        "name": "Did the injection succeed?",
+        "rows": 30,
+        "jev": {
+          "rows": 30,
+          "correct": 30,
+          "accuracy": 1.0,
+          "brier": 0.006786666666666667,
+          "p50_ms": 441.97268749121577,
+          "p95_ms": 495.4923501267331,
+          "errors": 0
+        },
+        "luna_decisions": {
+          "rows": 30,
+          "correct": 28,
+          "accuracy": 0.9333333333333333,
+          "brier": 0.11009333333333333,
+          "p50_ms": 326.33824995718896,
+          "p95_ms": 889.5091916027012,
+          "errors": 0
+        },
+        "ours": {
+          "rows": 30,
+          "correct": 27,
+          "accuracy": 0.9,
+          "brier": 0.2,
+          "p50_ms": 1841.2699165055528,
+          "p95_ms": 3136.12211230793,
+          "errors": 0
+        }
+      },
+      "AGT-3": {
+        "name": "Did the agent complete the task?",
+        "rows": 30,
+        "jev": {
+          "rows": 30,
+          "correct": 23,
+          "accuracy": 0.7666666666666667,
+          "brier": 0.30099333333333333,
+          "p50_ms": 448.3508749981411,
+          "p95_ms": 649.8082937585422,
+          "errors": 0
+        },
+        "luna_decisions": {
+          "rows": 30,
+          "correct": 18,
+          "accuracy": 0.6,
+          "brier": 0.59578,
+          "p50_ms": 327.2046044585295,
+          "p95_ms": 368.34111059433775,
+          "errors": 0
+        },
+        "ours": {
+          "rows": 30,
+          "correct": 22,
+          "accuracy": 0.7333333333333333,
+          "brier": 0.5333333333333333,
+          "p50_ms": 2797.621083445847,
+          "p95_ms": 9507.479487528304,
+          "errors": 0
+        }
+      },
+      "AGT-4": {
+        "name": "Is the answer backed by sources?",
+        "rows": 30,
+        "jev": {
+          "rows": 30,
+          "correct": 21,
+          "accuracy": 0.7,
+          "brier": 0.39916666666666667,
+          "p50_ms": 440.1653955283109,
+          "p95_ms": 477.8443581570172,
+          "errors": 0
+        },
+        "luna_decisions": {
+          "rows": 30,
+          "correct": 23,
+          "accuracy": 0.7666666666666667,
+          "brier": 0.35660000000000003,
+          "p50_ms": 321.9750000280328,
+          "p95_ms": 348.8968274730723,
+          "errors": 0
+        },
+        "ours": {
+          "rows": 30,
+          "correct": 20,
+          "accuracy": 0.6666666666666666,
+          "brier": 0.6537893573335732,
+          "p50_ms": 1642.9887499543838,
+          "p95_ms": 58332.990987610494,
+          "errors": 0
+        }
+      },
+      "AGT-5": {
+        "name": "Which reply is better?",
+        "rows": 28,
+        "jev": {
+          "rows": 28,
+          "correct": 26,
+          "accuracy": 0.9285714285714286,
+          "brier": 0.09765714285714286,
+          "p50_ms": 442.7683959947899,
+          "p95_ms": 496.753106257529,
+          "errors": 0
+        },
+        "luna_decisions": {
+          "rows": 28,
+          "correct": 22,
+          "accuracy": 0.7857142857142857,
+          "brier": 0.25985714285714284,
+          "p50_ms": 337.3583744978532,
+          "p95_ms": 1266.106914565898,
+          "errors": 0
+        },
+        "ours": {
+          "rows": 28,
+          "correct": 26,
+          "accuracy": 0.9285714285714286,
+          "brier": 0.15897766682930348,
+          "p50_ms": 1729.5483959605917,
+          "p95_ms": 3391.9581249472676,
+          "errors": 0
+        }
+      },
+      "COM-1": {
+        "name": "Does this product match the query?",
+        "rows": 30,
+        "jev": {
+          "rows": 30,
+          "correct": 24,
+          "accuracy": 0.8,
+          "brier": 0.3214708628371255,
+          "p50_ms": 437.62056247214787,
+          "p95_ms": 512.0271830004639,
+          "errors": 0
+        },
+        "luna_decisions": {
+          "rows": 30,
+          "correct": 20,
+          "accuracy": 0.6666666666666666,
+          "brier": 0.40619333333333335,
+          "p50_ms": 326.88399945618585,
+          "p95_ms": 495.0479515886394,
+          "errors": 0
+        },
+        "ours": {
+          "rows": 30,
+          "correct": 21,
+          "accuracy": 0.7,
+          "brier": 0.5887821185358859,
+          "p50_ms": 2141.4725210051984,
+          "p95_ms": 3159.5531892671706,
+          "errors": 0
+        }
+      },
+      "COM-2": {
+        "name": "What type of product is this?",
+        "rows": 30,
+        "jev": {
+          "rows": 30,
+          "correct": 30,
+          "accuracy": 1.0,
+          "brier": 0.0,
+          "p50_ms": 443.6024584865663,
+          "p95_ms": 1055.819735303519,
+          "errors": 0
+        },
+        "luna_decisions": {
+          "rows": 30,
+          "correct": 30,
+          "accuracy": 1.0,
+          "brier": 0.0,
+          "p50_ms": 327.68883352400735,
+          "p95_ms": 388.94536059815425,
+          "errors": 0
+        },
+        "ours": {
+          "rows": 30,
+          "correct": 30,
+          "accuracy": 1.0,
+          "brier": 0.0,
+          "p50_ms": 1761.7137915221974,
+          "p95_ms": 3229.6166224929025,
+          "errors": 0
+        }
+      },
+      "COM-3": {
+        "name": "Which industry is this company in?",
+        "rows": 30,
+        "jev": {
+          "rows": 30,
+          "correct": 30,
+          "accuracy": 1.0,
+          "brier": 0.004893333333333334,
+          "p50_ms": 420.774687489029,
+          "p95_ms": 495.32240882981563,
+          "errors": 0
+        },
+        "luna_decisions": {
+          "rows": 30,
+          "correct": 30,
+          "accuracy": 1.0,
+          "brier": 0.010746666666666667,
+          "p50_ms": 324.7153125121258,
+          "p95_ms": 356.3560706388671,
+          "errors": 0
+        },
+        "ours": {
+          "rows": 30,
+          "correct": 30,
+          "accuracy": 1.0,
+          "brier": 0.0,
+          "p50_ms": 1822.3790834890679,
+          "p95_ms": 3612.5443935510684,
+          "errors": 0
+        }
+      },
+      "DAT-1": {
+        "name": "Which SQL answers the question?",
+        "rows": 30,
+        "jev": {
+          "rows": 30,
+          "correct": 30,
+          "accuracy": 1.0,
+          "brier": 0.0005399999999999998,
+          "p50_ms": 424.8761874914635,
+          "p95_ms": 475.509895363939,
+          "errors": 0
+        },
+        "luna_decisions": {
+          "rows": 30,
+          "correct": 30,
+          "accuracy": 1.0,
+          "brier": 3.333333333333336e-05,
+          "p50_ms": 320.9975624922663,
+          "p95_ms": 679.515289521076,
+          "errors": 0
+        },
+        "ours": {
+          "rows": 30,
+          "correct": 30,
+          "accuracy": 1.0,
+          "brier": 0.0,
+          "p50_ms": 1451.4330829842947,
+          "p95_ms": 2163.603001734008,
+          "errors": 0
+        }
+      },
+      "DAT-2": {
+        "name": "Which cell answers the question?",
+        "rows": 30,
+        "jev": {
+          "rows": 30,
+          "correct": 29,
+          "accuracy": 0.9666666666666667,
+          "brier": 0.040100000000000004,
+          "p50_ms": 426.4099790016189,
+          "p95_ms": 691.0053415544097,
+          "errors": 0
+        },
+        "luna_decisions": {
+          "rows": 30,
+          "correct": 28,
+          "accuracy": 0.9333333333333333,
+          "brier": 0.12630666666666668,
+          "p50_ms": 323.56560399057344,
+          "p95_ms": 637.7887375361737,
+          "errors": 0
+        },
+        "ours": {
+          "rows": 30,
+          "correct": 26,
+          "accuracy": 0.8666666666666667,
+          "brier": 0.27143809831368293,
+          "p50_ms": 1629.575458529871,
+          "p95_ms": 2244.992464355891,
+          "errors": 0
+        }
+      },
+      "DAT-3": {
+        "name": "Does the chart support the claim?",
+        "rows": 32,
+        "jev": {
+          "rows": 32,
+          "correct": 32,
+          "accuracy": 1.0,
+          "brier": 6.250000000000006e-06,
+          "p50_ms": 443.24202099232934,
+          "p95_ms": 566.8854437419213,
+          "errors": 0
+        },
+        "luna_decisions": {
+          "rows": 32,
+          "correct": 32,
+          "accuracy": 1.0,
+          "brier": 0.0192875,
+          "p50_ms": 385.16547897597775,
+          "p95_ms": 468.0733231070917,
+          "errors": 0
+        },
+        "ours": {
+          "rows": 32,
+          "correct": 31,
+          "accuracy": 0.96875,
+          "brier": 0.0625,
+          "p50_ms": 1723.1380000011995,
+          "p95_ms": 2617.815941834124,
+          "errors": 0
+        }
+      },
+      "DAT-4": {
+        "name": "What does this column hold?",
+        "rows": 34,
+        "jev": {
+          "rows": 34,
+          "correct": 33,
+          "accuracy": 0.9705882352941176,
+          "brier": 0.031752941176470595,
+          "p50_ms": 463.60789600294083,
+          "p95_ms": 548.3348169917008,
+          "errors": 0
+        },
+        "luna_decisions": {
+          "rows": 34,
+          "correct": 33,
+          "accuracy": 0.9705882352941176,
+          "brier": 0.056588235294117654,
+          "p50_ms": 313.8692085049115,
+          "p95_ms": 352.93030228349375,
+          "errors": 0
+        },
+        "ours": {
+          "rows": 34,
+          "correct": 31,
+          "accuracy": 0.9117647058823529,
+          "brier": 0.16560593423667033,
+          "p50_ms": 1498.6917504575104,
+          "p95_ms": 2387.364370963768,
+          "errors": 0
+        }
+      },
+      "DOC-1": {
+        "name": "Where is this page from?",
+        "rows": 30,
+        "jev": {
+          "rows": 30,
+          "correct": 30,
+          "accuracy": 1.0,
+          "brier": 0.00014000000000000012,
+          "p50_ms": 494.9174170324113,
+          "p95_ms": 701.5236267237921,
+          "errors": 0
+        },
+        "luna_decisions": {
+          "rows": 30,
+          "correct": 30,
+          "accuracy": 1.0,
+          "brier": 6.6666666666666734e-06,
+          "p50_ms": 464.67399992980063,
+          "p95_ms": 512.4667291995137,
+          "errors": 0
+        },
+        "ours": {
+          "rows": 30,
+          "correct": 30,
+          "accuracy": 1.0,
+          "brier": 0.00015123811327607544,
+          "p50_ms": 1711.3462914712727,
+          "p95_ms": 2871.8950688140467,
+          "errors": 0
+        }
+      },
+      "DOC-2": {
+        "name": "Decision, action item, or neither?",
+        "rows": 30,
+        "jev": {
+          "rows": 30,
+          "correct": 21,
+          "accuracy": 0.7,
+          "brier": 0.4907237900894466,
+          "p50_ms": 465.8056460029911,
+          "p95_ms": 526.5959732583724,
+          "errors": 0
+        },
+        "luna_decisions": {
+          "rows": 30,
+          "correct": 17,
+          "accuracy": 0.5666666666666667,
+          "brier": 0.5580533333333334,
+          "p50_ms": 317.82991701038554,
+          "p95_ms": 613.5955189820378,
+          "errors": 0
+        },
+        "ours": {
+          "rows": 30,
+          "correct": 18,
+          "accuracy": 0.6,
+          "brier": 0.6910169440397428,
+          "p50_ms": 1472.2263964940794,
+          "p95_ms": 3796.6572267294355,
+          "errors": 0
+        }
+      },
+      "DOC-3": {
+        "name": "Which summary is this meeting's?",
+        "rows": 27,
+        "jev": {
+          "rows": 27,
+          "correct": 25,
+          "accuracy": 0.9259259259259259,
+          "brier": 0.17256296296296297,
+          "p50_ms": 458.63624999765307,
+          "p95_ms": 825.6928954855539,
+          "errors": 0
+        },
+        "luna_decisions": {
+          "rows": 27,
+          "correct": 23,
+          "accuracy": 0.8518518518518519,
+          "brier": 0.23620740740740742,
+          "p50_ms": 322.3922089673579,
+          "p95_ms": 441.49782479507843,
+          "errors": 0
+        },
+        "ours": {
+          "rows": 27,
+          "correct": 21,
+          "accuracy": 0.7777777777777778,
+          "brier": 0.4436188593356785,
+          "p50_ms": 1447.431500069797,
+          "p95_ms": 4166.211066953837,
+          "errors": 0
+        }
+      },
+      "DSN-1": {
+        "name": "What does this icon mean?",
+        "rows": 30,
+        "jev": {
+          "rows": 30,
+          "correct": 14,
+          "accuracy": 0.4666666666666667,
+          "brier": 0.6757360521035269,
+          "p50_ms": 461.04483303497545,
+          "p95_ms": 559.1364626132417,
+          "errors": 0
+        },
+        "luna_decisions": {
+          "rows": 30,
+          "correct": 28,
+          "accuracy": 0.9333333333333333,
+          "brier": 0.08303333333333333,
+          "p50_ms": 321.6216039727442,
+          "p95_ms": 384.8002999904565,
+          "errors": 0
+        },
+        "ours": {
+          "rows": 30,
+          "correct": 30,
+          "accuracy": 1.0,
+          "brier": 0.0,
+          "p50_ms": 1624.7559584444389,
+          "p95_ms": 2251.896629336988,
+          "errors": 0
+        }
+      },
+      "ENG-1": {
+        "name": "Which file must change?",
+        "rows": 30,
+        "jev": {
+          "rows": 30,
+          "correct": 30,
+          "accuracy": 1.0,
+          "brier": 0.01337712342277999,
+          "p50_ms": 453.79781248630024,
+          "p95_ms": 751.9151001586577,
+          "errors": 0
+        },
+        "luna_decisions": {
+          "rows": 30,
+          "correct": 30,
+          "accuracy": 1.0,
+          "brier": 0.013280000000000002,
+          "p50_ms": 339.6261250018142,
+          "p95_ms": 723.9273520128324,
+          "errors": 0
+        },
+        "ours": {
+          "rows": 30,
+          "correct": 29,
+          "accuracy": 0.9666666666666667,
+          "brier": 0.0690335305719921,
+          "p50_ms": 1640.615999524016,
+          "p95_ms": 3054.532687674507,
+          "errors": 0
+        }
+      },
+      "ENG-2": {
+        "name": "What kind of change is this?",
+        "rows": 30,
+        "jev": {
+          "rows": 30,
+          "correct": 28,
+          "accuracy": 0.9333333333333333,
+          "brier": 0.09691333333333334,
+          "p50_ms": 443.4229374746792,
+          "p95_ms": 512.7390601701335,
+          "errors": 0
+        },
+        "luna_decisions": {
+          "rows": 30,
+          "correct": 24,
+          "accuracy": 0.8,
+          "brier": 0.2944266666666666,
+          "p50_ms": 334.88043752731755,
+          "p95_ms": 902.4204024521165,
+          "errors": 0
+        },
+        "ours": {
+          "rows": 30,
+          "correct": 26,
+          "accuracy": 0.8666666666666667,
+          "brier": 0.22953556831830796,
+          "p50_ms": 1597.6509579923004,
+          "p95_ms": 2661.272262665443,
+          "errors": 0
+        }
+      },
+      "ENG-3": {
+        "name": "Which weakness class is this?",
+        "rows": 30,
+        "jev": {
+          "rows": 30,
+          "correct": 29,
+          "accuracy": 0.9666666666666667,
+          "brier": 0.07991333333333332,
+          "p50_ms": 427.9555625107605,
+          "p95_ms": 521.2807040341431,
+          "errors": 0
+        },
+        "luna_decisions": {
+          "rows": 30,
+          "correct": 27,
+          "accuracy": 0.9,
+          "brier": 0.16705333333333336,
+          "p50_ms": 318.36964609101415,
+          "p95_ms": 505.1888542540832,
+          "errors": 0
+        },
+        "ours": {
+          "rows": 30,
+          "correct": 28,
+          "accuracy": 0.9333333333333333,
+          "brier": 0.1258067894147039,
+          "p50_ms": 1727.5468125590123,
+          "p95_ms": 2777.2430268349126,
+          "errors": 0
+        }
+      },
+      "ENG-4": {
+        "name": "Live secret or placeholder?",
+        "rows": 30,
+        "jev": {
+          "rows": 30,
+          "correct": 29,
+          "accuracy": 0.9666666666666667,
+          "brier": 0.13399999999999998,
+          "p50_ms": 419.39404149889015,
+          "p95_ms": 504.2789418337634,
+          "errors": 0
+        },
+        "luna_decisions": {
+          "rows": 30,
+          "correct": 27,
+          "accuracy": 0.9,
+          "brier": 0.20692000000000002,
+          "p50_ms": 340.4637505300343,
+          "p95_ms": 767.6000062318035,
+          "errors": 0
+        },
+        "ours": {
+          "rows": 30,
+          "correct": 29,
+          "accuracy": 0.9666666666666667,
+          "brier": 0.07409171746356173,
+          "p50_ms": 1679.9752920051105,
+          "p95_ms": 2802.908837463473,
+          "errors": 0
+        }
+      },
+      "ENG-5": {
+        "name": "Which message describes this diff?",
+        "rows": 30,
+        "jev": {
+          "rows": 30,
+          "correct": 30,
+          "accuracy": 1.0,
+          "brier": 0.0032266666666666667,
+          "p50_ms": 433.5311879985966,
+          "p95_ms": 516.5363036299822,
+          "errors": 0
+        },
+        "luna_decisions": {
+          "rows": 30,
+          "correct": 30,
+          "accuracy": 1.0,
+          "brier": 1.3333333333333347e-05,
+          "p50_ms": 325.2217709668912,
+          "p95_ms": 386.566725152079,
+          "errors": 0
+        },
+        "ours": {
+          "rows": 30,
+          "correct": 30,
+          "accuracy": 1.0,
+          "brier": 6.535306996046145e-06,
+          "p50_ms": 1806.4804794848897,
+          "p95_ms": 3402.0870043779714,
+          "errors": 0
+        }
+      },
+      "FIN-1": {
+        "name": "Which part of the 10-K?",
+        "rows": 30,
+        "jev": {
+          "rows": 30,
+          "correct": 29,
+          "accuracy": 0.9666666666666667,
+          "brier": 0.08146,
+          "p50_ms": 431.6463124996517,
+          "p95_ms": 473.5483731143176,
+          "errors": 0
+        },
+        "luna_decisions": {
+          "rows": 30,
+          "correct": 29,
+          "accuracy": 0.9666666666666667,
+          "brier": 0.08832666666666666,
+          "p50_ms": 319.32854204205796,
+          "p95_ms": 700.9425708034524,
+          "errors": 0
+        },
+        "ours": {
+          "rows": 30,
+          "correct": 29,
+          "accuracy": 0.9666666666666667,
+          "brier": 0.07157011452621237,
+          "p50_ms": 1874.8594374628738,
+          "p95_ms": 2954.0420503297355,
+          "errors": 0
+        }
+      },
+      "FIN-2": {
+        "name": "What does this 8-K report?",
+        "rows": 30,
+        "jev": {
+          "rows": 30,
+          "correct": 30,
+          "accuracy": 1.0,
+          "brier": 0.0022266666666666667,
+          "p50_ms": 423.4126874944195,
+          "p95_ms": 635.9518544952151,
+          "errors": 0
+        },
+        "luna_decisions": {
+          "rows": 30,
+          "correct": 30,
+          "accuracy": 1.0,
+          "brier": 0.0028266666666666674,
+          "p50_ms": 313.7543749762699,
+          "p95_ms": 397.3269059788433,
+          "errors": 0
+        },
+        "ours": {
+          "rows": 30,
+          "correct": 30,
+          "accuracy": 1.0,
+          "brier": 0.000550964187327824,
+          "p50_ms": 2010.9102294663899,
+          "p95_ms": 3360.964729369151,
+          "errors": 0
+        }
+      },
+      "FIN-3": {
+        "name": "Which figure is the total?",
+        "rows": 30,
+        "jev": {
+          "rows": 30,
+          "correct": 30,
+          "accuracy": 1.0,
+          "brier": 0.0,
+          "p50_ms": 421.10762497759424,
+          "p95_ms": 478.93756669946015,
+          "errors": 0
+        },
+        "luna_decisions": {
+          "rows": 30,
+          "correct": 30,
+          "accuracy": 1.0,
+          "brier": 1.3333333333333347e-05,
+          "p50_ms": 482.53864550497383,
+          "p95_ms": 690.1571482769208,
+          "errors": 0
+        },
+        "ours": {
+          "rows": 30,
+          "correct": 30,
+          "accuracy": 1.0,
+          "brier": 0.0,
+          "p50_ms": 2298.8203539862297,
+          "p95_ms": 3293.7744062219276,
+          "errors": 0
+        }
+      },
+      "FIN-4": {
+        "name": "What does this number report?",
+        "rows": 31,
+        "jev": {
+          "rows": 31,
+          "correct": 31,
+          "accuracy": 1.0,
+          "brier": 0.0,
+          "p50_ms": 427.75408399757,
+          "p95_ms": 481.14460401120596,
+          "errors": 0
+        },
+        "luna_decisions": {
+          "rows": 31,
+          "correct": 31,
+          "accuracy": 1.0,
+          "brier": 0.006761290322580645,
+          "p50_ms": 315.788833075203,
+          "p95_ms": 348.0563125340268,
+          "errors": 0
+        },
+        "ours": {
+          "rows": 31,
+          "correct": 31,
+          "accuracy": 1.0,
+          "brier": 0.0,
+          "p50_ms": 1969.384124968201,
+          "p95_ms": 3052.039563015569,
+          "errors": 0
+        }
+      },
+      "LEG-1": {
+        "name": "Does the NDA say this?",
+        "rows": 33,
+        "jev": {
+          "rows": 33,
+          "correct": 28,
+          "accuracy": 0.8484848484848485,
+          "brier": 0.2722242424242424,
+          "p50_ms": 428.5926250158809,
+          "p95_ms": 491.6823912295513,
+          "errors": 0
+        },
+        "luna_decisions": {
+          "rows": 33,
+          "correct": 24,
+          "accuracy": 0.7272727272727273,
+          "brier": 0.35124242424242424,
+          "p50_ms": 324.8287080787122,
+          "p95_ms": 359.30979996919626,
+          "errors": 0
+        },
+        "ours": {
+          "rows": 33,
+          "correct": 25,
+          "accuracy": 0.7575757575757576,
+          "brier": 0.48236497203439355,
+          "p50_ms": 2021.187459002249,
+          "p95_ms": 4975.422032759525,
+          "errors": 0
+        }
+      },
+      "LEG-2": {
+        "name": "What kind of clause is this?",
+        "rows": 30,
+        "jev": {
+          "rows": 30,
+          "correct": 30,
+          "accuracy": 1.0,
+          "brier": 2.6666666666666694e-05,
+          "p50_ms": 428.95222903462127,
+          "p95_ms": 474.24928302934853,
+          "errors": 0
+        },
+        "luna_decisions": {
+          "rows": 30,
+          "correct": 30,
+          "accuracy": 1.0,
+          "brier": 0.0038399999999999992,
+          "p50_ms": 321.1499795434065,
+          "p95_ms": 531.0077393485695,
+          "errors": 0
+        },
+        "ours": {
+          "rows": 30,
+          "correct": 30,
+          "accuracy": 1.0,
+          "brier": 0.0,
+          "p50_ms": 1556.1542705399916,
+          "p95_ms": 2339.916123490547,
+          "errors": 0
+        }
+      },
+      "LEG-3": {
+        "name": "Is this term unfair, and how?",
+        "rows": 33,
+        "jev": {
+          "rows": 33,
+          "correct": 33,
+          "accuracy": 1.0,
+          "brier": 0.030339393939393944,
+          "p50_ms": 453.6208339850418,
+          "p95_ms": 570.9779168013483,
+          "errors": 0
+        },
+        "luna_decisions": {
+          "rows": 33,
+          "correct": 30,
+          "accuracy": 0.9090909090909091,
+          "brier": 0.13913333333333333,
+          "p50_ms": 322.18683301471174,
+          "p95_ms": 342.37267484422773,
+          "errors": 0
+        },
+        "ours": {
+          "rows": 33,
+          "correct": 32,
+          "accuracy": 0.9696969696969697,
+          "brier": 0.05573472397557403,
+          "p50_ms": 1779.1332500055432,
+          "p95_ms": 2435.7362250098954,
+          "errors": 0
+        }
+      },
+      "LEG-4": {
+        "name": "Does the contract cover this?",
+        "rows": 30,
+        "jev": {
+          "rows": 30,
+          "correct": 30,
+          "accuracy": 1.0,
+          "brier": 0.014446666666666667,
+          "p50_ms": 445.8843329921365,
+          "p95_ms": 526.2933104648255,
+          "errors": 0
+        },
+        "luna_decisions": {
+          "rows": 30,
+          "correct": 30,
+          "accuracy": 1.0,
+          "brier": 0.004113333333333334,
+          "p50_ms": 318.8222920289263,
+          "p95_ms": 350.08309983531944,
+          "errors": 0
+        },
+        "ours": {
+          "rows": 30,
+          "correct": 30,
+          "accuracy": 1.0,
+          "brier": 0.0,
+          "p50_ms": 1325.614770525135,
+          "p95_ms": 2194.579568767221,
+          "errors": 0
+        }
+      },
+      "PRD-1": {
+        "name": "Which headline won?",
+        "rows": 30,
+        "jev": {
+          "rows": 30,
+          "correct": 17,
+          "accuracy": 0.5666666666666667,
+          "brier": 0.4445133333333333,
+          "p50_ms": 442.3431034665555,
+          "p95_ms": 547.3332874942571,
+          "errors": 0
+        },
+        "luna_decisions": {
+          "rows": 30,
+          "correct": 17,
+          "accuracy": 0.5666666666666667,
+          "brier": 0.489,
+          "p50_ms": 321.66941656032577,
+          "p95_ms": 377.92858527973283,
+          "errors": 0
+        },
+        "ours": {
+          "rows": 30,
+          "correct": 13,
+          "accuracy": 0.43333333333333335,
+          "brier": 0.7741001168616816,
+          "p50_ms": 1549.3904164759442,
+          "p95_ms": 4584.446391637895,
+          "errors": 1
+        }
+      },
+      "PRD-2": {
+        "name": "Major, minor or patch?",
+        "rows": 30,
+        "jev": {
+          "rows": 30,
+          "correct": 30,
+          "accuracy": 1.0,
+          "brier": 0.008979999999999998,
+          "p50_ms": 422.2251460305415,
+          "p95_ms": 487.57521688239643,
+          "errors": 0
+        },
+        "luna_decisions": {
+          "rows": 30,
+          "correct": 30,
+          "accuracy": 1.0,
+          "brier": 0.0061400000000000005,
+          "p50_ms": 323.08960403315723,
+          "p95_ms": 513.302327413111,
+          "errors": 0
+        },
+        "ours": {
+          "rows": 30,
+          "correct": 29,
+          "accuracy": 0.9666666666666667,
+          "brier": 0.056812018322030707,
+          "p50_ms": 1422.6876044413075,
+          "p95_ms": 2050.396075082244,
+          "errors": 0
+        }
+      },
+      "SAF-1": {
+        "name": "Attack on the assistant",
+        "rows": 30,
+        "jev": {
+          "rows": 30,
+          "correct": 29,
+          "accuracy": 0.9666666666666667,
+          "brier": 0.05235333333333334,
+          "p50_ms": 424.5501875120681,
+          "p95_ms": 640.4284418385935,
+          "errors": 0
+        },
+        "luna_decisions": {
+          "rows": 30,
+          "correct": 29,
+          "accuracy": 0.9666666666666667,
+          "brier": 0.10522000000000001,
+          "p50_ms": 322.6396255195141,
+          "p95_ms": 371.22379792854184,
+          "errors": 0
+        },
+        "ours": {
+          "rows": 30,
+          "correct": 28,
+          "accuracy": 0.9333333333333333,
+          "brier": 0.1135182285105198,
+          "p50_ms": 1899.5070000528358,
+          "p95_ms": 3406.958264787681,
+          "errors": 0
+        }
       },
       "SAF-2": {
-        "luna_decisions": {
-          "rows": 30,
-          "correct": 29,
-          "accuracy": 0.9666666666666667
-        },
         "name": "Toxic comment or not",
+        "rows": 30,
+        "source_dataset": "Civil Comments",
         "jev": {
           "rows": 30,
           "correct": 29,
-          "accuracy": 0.9666666666666667
+          "accuracy": 0.9666666666666667,
+          "brier": 0.03826666666666667,
+          "p50_ms": 434.5269585028291,
+          "p95_ms": 479.8116772755747,
+          "errors": 0
         },
-        "source_dataset": "Civil Comments"
+        "luna_decisions": {
+          "rows": 30,
+          "correct": 29,
+          "accuracy": 0.9666666666666667,
+          "brier": 0.045426666666666664,
+          "p50_ms": 319.7060624952428,
+          "p95_ms": 657.0060873113091,
+          "errors": 0
+        },
+        "ours": {
+          "rows": 30,
+          "correct": 30,
+          "accuracy": 1.0,
+          "brier": 0.006556092512941664,
+          "p50_ms": 1769.3264579866081,
+          "p95_ms": 2828.705793444532,
+          "errors": 0
+        }
+      },
+      "SUP-1": {
+        "name": "Which team owns this complaint?",
+        "rows": 35,
+        "jev": {
+          "rows": 35,
+          "correct": 35,
+          "accuracy": 1.0,
+          "brier": 0.0005600000000000001,
+          "p50_ms": 431.17445800453424,
+          "p95_ms": 589.6271788107695,
+          "errors": 0
+        },
+        "luna_decisions": {
+          "rows": 35,
+          "correct": 35,
+          "accuracy": 1.0,
+          "brier": 9.714285714285725e-05,
+          "p50_ms": 326.8739590421319,
+          "p95_ms": 862.5788212753832,
+          "errors": 0
+        },
+        "ours": {
+          "rows": 35,
+          "correct": 35,
+          "accuracy": 1.0,
+          "brier": 0.004009699641655387,
+          "p50_ms": 1847.5062500219792,
+          "p95_ms": 3599.5464123901897,
+          "errors": 0
+        }
+      },
+      "SUP-2": {
+        "name": "What is the complaint about?",
+        "rows": 32,
+        "jev": {
+          "rows": 32,
+          "correct": 30,
+          "accuracy": 0.9375,
+          "brier": 0.105225,
+          "p50_ms": 420.54514549090527,
+          "p95_ms": 460.76445262297057,
+          "errors": 0
+        },
+        "luna_decisions": {
+          "rows": 32,
+          "correct": 30,
+          "accuracy": 0.9375,
+          "brier": 0.1075,
+          "p50_ms": 316.67593750171363,
+          "p95_ms": 338.24200450326316,
+          "errors": 0
+        },
+        "ours": {
+          "rows": 32,
+          "correct": 30,
+          "accuracy": 0.9375,
+          "brier": 0.13084915950628584,
+          "p50_ms": 1942.54729145905,
+          "p95_ms": 3350.500989629654,
+          "errors": 0
+        }
       }
     },
-    "per_task_latency_and_brier_published": false
+    "effort_slice": {
+      "description": "The 174 rows the service ran at medium reasoning in the main run (long vector input: 99 image rows on the decisions wire, 75 text rows), re-run at reasoning none (LDM_REASONING_EFFORT=none). The other 897 rows ran at none in the main run.",
+      "run_id": "20261013T160021Z-slice-none",
+      "all": {
+        "rows": 174,
+        "medium": {
+          "rows": 174,
+          "correct": 156,
+          "accuracy": 0.896551724137931,
+          "brier": 0.2070339828283234,
+          "p50_ms": 1977.9803749988787,
+          "p95_ms": 4829.529867105884,
+          "input_tokens": 438729,
+          "output_tokens_incl_reasoning": 9433,
+          "reasoning_tokens": 4718,
+          "credits": 1.2147350000000001
+        },
+        "none": {
+          "rows": 174,
+          "correct": 147,
+          "accuracy": 0.8448275862068966,
+          "brier": 0.3125620006807475,
+          "p50_ms": 1610.6648544664495,
+          "p95_ms": 2685.5178042373154,
+          "input_tokens": 445239,
+          "output_tokens_incl_reasoning": 4664,
+          "reasoning_tokens": 0,
+          "credits": 1.1650615000000002
+        },
+        "paired": {
+          "both_correct": 143,
+          "only_medium_correct": 13,
+          "only_none_correct": 4,
+          "both_wrong": 14,
+          "same_answer": 157
+        }
+      },
+      "image": {
+        "rows": 99,
+        "medium": {
+          "rows": 99,
+          "correct": 98,
+          "accuracy": 0.98989898989899,
+          "brier": 0.020247849933315982,
+          "p50_ms": 1901.5655829571187,
+          "p95_ms": 3256.863437534775,
+          "input_tokens": 220872,
+          "output_tokens_incl_reasoning": 3681,
+          "reasoning_tokens": 896,
+          "credits": 0.5981925
+        },
+        "none": {
+          "rows": 99,
+          "correct": 96,
+          "accuracy": 0.9696969696969697,
+          "brier": 0.060612001794238826,
+          "p50_ms": 1701.4249580679461,
+          "p95_ms": 2577.321454382035,
+          "input_tokens": 220872,
+          "output_tokens_incl_reasoning": 2741,
+          "reasoning_tokens": 0,
+          "credits": 0.5864425
+        },
+        "paired": {
+          "both_correct": 96,
+          "only_medium_correct": 2,
+          "only_none_correct": 0,
+          "both_wrong": 1,
+          "same_answer": 97
+        }
+      },
+      "text": {
+        "rows": 75,
+        "medium": {
+          "rows": 75,
+          "correct": 58,
+          "accuracy": 0.7733333333333333,
+          "brier": 0.4535916782497332,
+          "p50_ms": 2344.0881670685485,
+          "p95_ms": 5362.8601876203875,
+          "input_tokens": 217857,
+          "output_tokens_incl_reasoning": 5752,
+          "reasoning_tokens": 3822,
+          "credits": 0.6165425
+        },
+        "none": {
+          "rows": 75,
+          "correct": 51,
+          "accuracy": 0.68,
+          "brier": 0.6451359992109389,
+          "p50_ms": 1448.030291008763,
+          "p95_ms": 2702.517229586374,
+          "input_tokens": 224367,
+          "output_tokens_incl_reasoning": 1923,
+          "reasoning_tokens": 0,
+          "credits": 0.5786190000000001
+        },
+        "paired": {
+          "both_correct": 47,
+          "only_medium_correct": 11,
+          "only_none_correct": 4,
+          "both_wrong": 13,
+          "same_answer": 60
+        }
+      },
+      "by_task": {
+        "AGT-2": {
+          "rows": 3,
+          "medium_correct": 3,
+          "none_correct": 3
+        },
+        "AGT-3": {
+          "rows": 30,
+          "medium_correct": 22,
+          "none_correct": 17
+        },
+        "DAT-2": {
+          "rows": 1,
+          "medium_correct": 0,
+          "none_correct": 1
+        },
+        "DAT-3": {
+          "rows": 32,
+          "medium_correct": 31,
+          "none_correct": 29
+        },
+        "DAT-4": {
+          "rows": 1,
+          "medium_correct": 1,
+          "none_correct": 1
+        },
+        "DOC-1": {
+          "rows": 30,
+          "medium_correct": 30,
+          "none_correct": 30
+        },
+        "DOC-3": {
+          "rows": 24,
+          "medium_correct": 19,
+          "none_correct": 16
+        },
+        "DSN-1": {
+          "rows": 7,
+          "medium_correct": 7,
+          "none_correct": 7
+        },
+        "FIN-3": {
+          "rows": 30,
+          "medium_correct": 30,
+          "none_correct": 30
+        },
+        "LEG-1": {
+          "rows": 16,
+          "medium_correct": 13,
+          "none_correct": 13
+        }
+      }
+    },
+    "ours_minus_jev_accuracy": {
+      "method": "difference in accuracy, 95% interval from a task-clustered bootstrap (500 repetitions, seed 20260923) in the benchmark harness",
+      "all": {
+        "rows": 1071,
+        "difference": -0.015873015873015872,
+        "ci95": [
+          -0.04494818607424032,
+          0.02151397478872574
+        ]
+      },
+      "text_rows": {
+        "rows": 949,
+        "difference": -0.03371970495258166,
+        "ci95": [
+          -0.052465395395223276,
+          -0.018537590113285273
+        ]
+      },
+      "image_rows": {
+        "rows": 122,
+        "difference": 0.12295081967213115,
+        "ci95": [
+          -0.016129032258064516,
+          0.4
+        ]
+      }
+    },
+    "usage_main_run": {
+      "attempts": 1075,
+      "input": 1403957,
+      "cached": 0,
+      "output": 35324,
+      "reasoning": 4718,
+      "credits": 3.9514425
+    }
   }
 }
