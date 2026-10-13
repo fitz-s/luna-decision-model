@@ -1,0 +1,625 @@
+{
+  "schema_version": 1,
+  "checked_at_utc": "2026-10-13",
+  "product_version": "0.1.0",
+  "scope": "Historical public-460 same-question summaries plus a small current-build measurement of 0.1.0 (`luna_010_measurement`); not a paired route/machine/time benchmark.",
+  "metric_source": {
+    "review_bundle_path": "evidence/acceptance-20261011/public-460-metrics.json",
+    "sha256": "e9004286e8715751376effd893b6a2b58346bf77fa28fabbac5781fc3582a84c",
+    "first_run_receipt_sha256": "7f0f96b65a738f42c56263300518d690148aa2c35e516078de0fce5c30a7f697"
+  },
+  "conditions": {
+    "luna": "Archived first public-460 Luna summary, ordinary Codex OAuth Responses. Runner config sets four concurrent client workers; actual concurrency, run start, build and per-request traces unavailable.",
+    "jev": "Published historical TypeSafe cloud results. Risk requested alias jev-latest, not an immutable served checkpoint; toxicity/tool_select returned jev-1.13.0. Separate clients, machines, dates and inference routes.",
+    "latency": "Observed end-to-end request wall time, including network. The 0.1.0 measurement is in `luna_010_measurement`. No paired speed ratio, SLA or inference-only time.",
+    "accuracy": "Original gold and case IDs; all planned requests in each denominator. Tool selection scores function choice, not generated arguments.",
+    "probability": "Brier uses complete vectors: binary squared error versus multiclass sum, never pooled. Max-p ECE differs from public Choice confidence. No calibration certification.",
+    "provenance_gap": "Original run.json and per-request traces are unavailable in the retained evidence. Only derived summary, frozen input/source manifests and runner/scorer are available. These are not freshly reconstructed raw inference results."
+  },
+  "datasets": {
+    "risk": {
+      "luna": {
+        "n": 60,
+        "completed": 60,
+        "errors": 0,
+        "correct": 55,
+        "accuracy": 0.9166666666666666,
+        "wilson95": [
+          0.8193105798166558,
+          0.9638795433982692
+        ],
+        "p50_ms": 1199.8818124993704,
+        "p95_ms": 2026.3682500226423,
+        "ece_probability": 0.08695619561956197,
+        "calibration_bins": [
+          {
+            "lo": 0.5,
+            "n": 1,
+            "accuracy": 1.0,
+            "mean_probability": 0.5
+          },
+          {
+            "lo": 0.9,
+            "n": 59,
+            "accuracy": 0.9152542372881356,
+            "mean_probability": 0.9952096904605715
+          }
+        ],
+        "brier": 0.16370850181327762,
+        "high_probability_errors": 5,
+        "high_probability_n": 59
+      },
+      "jev": {
+        "n": 60,
+        "completed": 60,
+        "errors": 0,
+        "correct": 55,
+        "accuracy": 0.9166666666666666,
+        "wilson95": [
+          0.8193105798166558,
+          0.9638795433982692
+        ],
+        "p50_ms": 421.635,
+        "p95_ms": 541.99,
+        "ece_probability": 0.049500000000000065,
+        "calibration_bins": [
+          {
+            "lo": 0.3,
+            "n": 1,
+            "accuracy": 0.0,
+            "mean_probability": 0.35
+          },
+          {
+            "lo": 0.4,
+            "n": 1,
+            "accuracy": 0.0,
+            "mean_probability": 0.44
+          },
+          {
+            "lo": 0.6,
+            "n": 4,
+            "accuracy": 0.75,
+            "mean_probability": 0.635
+          },
+          {
+            "lo": 0.7,
+            "n": 1,
+            "accuracy": 1.0,
+            "mean_probability": 0.74
+          },
+          {
+            "lo": 0.8,
+            "n": 2,
+            "accuracy": 0.5,
+            "mean_probability": 0.84
+          },
+          {
+            "lo": 0.9,
+            "n": 51,
+            "accuracy": 0.9803921568627451,
+            "mean_probability": 0.995686274509804
+          }
+        ],
+        "brier": 0.11609333333333333,
+        "high_probability_errors": 1,
+        "high_probability_n": 51
+      },
+      "jev_identifier": "jev-latest"
+    },
+    "toxicity": {
+      "luna": {
+        "n": 200,
+        "completed": 200,
+        "errors": 0,
+        "correct": 160,
+        "accuracy": 0.8,
+        "wilson95": [
+          0.7391448134346212,
+          0.8495479907390189
+        ],
+        "p50_ms": 1093.3223749743775,
+        "p95_ms": 1848.3982499456033,
+        "ece_probability": 0.10885000000000003,
+        "calibration_bins": [
+          {
+            "lo": 0.5,
+            "n": 1,
+            "accuracy": 1.0,
+            "mean_probability": 0.56
+          },
+          {
+            "lo": 0.6,
+            "n": 9,
+            "accuracy": 0.6666666666666666,
+            "mean_probability": 0.65
+          },
+          {
+            "lo": 0.7,
+            "n": 18,
+            "accuracy": 0.5555555555555556,
+            "mean_probability": 0.7538888888888889
+          },
+          {
+            "lo": 0.8,
+            "n": 43,
+            "accuracy": 0.7441860465116279,
+            "mean_probability": 0.8490697674418605
+          },
+          {
+            "lo": 0.9,
+            "n": 129,
+            "accuracy": 0.8604651162790697,
+            "mean_probability": 0.962015503875969
+          }
+        ],
+        "brier": 0.1639305,
+        "high_probability_errors": 18,
+        "high_probability_n": 129
+      },
+      "jev": {
+        "n": 200,
+        "completed": 200,
+        "errors": 0,
+        "correct": 157,
+        "accuracy": 0.785,
+        "wilson95": [
+          0.7229769265100339,
+          0.8362812374549242
+        ],
+        "p50_ms": 151.41564549412578,
+        "p95_ms": 201.84120815247297,
+        "ece_probability": 0.06105000000000001,
+        "calibration_bins": [
+          {
+            "lo": 0.5,
+            "n": 34,
+            "accuracy": 0.47058823529411764,
+            "mean_probability": 0.5494117647058824
+          },
+          {
+            "lo": 0.6,
+            "n": 35,
+            "accuracy": 0.7142857142857143,
+            "mean_probability": 0.646
+          },
+          {
+            "lo": 0.7,
+            "n": 47,
+            "accuracy": 0.8723404255319149,
+            "mean_probability": 0.7468085106382979
+          },
+          {
+            "lo": 0.8,
+            "n": 53,
+            "accuracy": 0.8679245283018868,
+            "mean_probability": 0.8462264150943396
+          },
+          {
+            "lo": 0.9,
+            "n": 31,
+            "accuracy": 0.9354838709677419,
+            "mean_probability": 0.9325806451612904
+          }
+        ],
+        "brier": 0.1494485,
+        "high_probability_errors": 2,
+        "high_probability_n": 31
+      },
+      "jev_identifier": "jev-1.13.0"
+    },
+    "tool_select": {
+      "luna": {
+        "n": 200,
+        "completed": 200,
+        "errors": 0,
+        "correct": 198,
+        "accuracy": 0.99,
+        "wilson95": [
+          0.9642782382838231,
+          0.9972533418664555
+        ],
+        "p50_ms": 1118.2862499845214,
+        "p95_ms": 2209.0768340276554,
+        "ece_probability": 0.00873140255201987,
+        "calibration_bins": [
+          {
+            "lo": 0.5,
+            "n": 3,
+            "accuracy": 0.6666666666666666,
+            "mean_probability": 0.5
+          },
+          {
+            "lo": 0.8,
+            "n": 1,
+            "accuracy": 0.0,
+            "mean_probability": 0.8333333333333334
+          },
+          {
+            "lo": 0.9,
+            "n": 196,
+            "accuracy": 1.0,
+            "mean_probability": 0.9978931266475988
+          }
+        ],
+        "brier": 0.015544736240221962,
+        "high_probability_errors": 0,
+        "high_probability_n": 196
+      },
+      "jev": {
+        "n": 200,
+        "completed": 200,
+        "errors": 0,
+        "correct": 199,
+        "accuracy": 0.995,
+        "wilson95": [
+          0.9722262956021069,
+          0.9991168312843989
+        ],
+        "p50_ms": 147.93108333833516,
+        "p95_ms": 217.06412499770522,
+        "ece_probability": 0.005899999999999955,
+        "calibration_bins": [
+          {
+            "lo": 0.4,
+            "n": 1,
+            "accuracy": 0.0,
+            "mean_probability": 0.44
+          },
+          {
+            "lo": 0.7,
+            "n": 2,
+            "accuracy": 1.0,
+            "mean_probability": 0.765
+          },
+          {
+            "lo": 0.8,
+            "n": 1,
+            "accuracy": 1.0,
+            "mean_probability": 0.87
+          },
+          {
+            "lo": 0.9,
+            "n": 196,
+            "accuracy": 1.0,
+            "mean_probability": 0.9992857142857143
+          }
+        ],
+        "brier": 0.0047279999999999996,
+        "high_probability_errors": 0,
+        "high_probability_n": 196
+      },
+      "jev_identifier": "jev-1.13.0"
+    }
+  },
+  "observed_luna_usage": {
+    "input_tokens": 284370,
+    "output_tokens": 11742
+  },
+  "pricing": {
+    "currency": "USD",
+    "unit_tokens": 1000000,
+    "checked_at_utc": "2026-10-13",
+    "rates": {
+      "typesafe_jev": {
+        "input_per_million": 0.042,
+        "output_per_million": 0,
+        "url": "https://typesafe.ai/blog/introducing-system-one-models-and-jev",
+        "terms": "Vendor-published early-access price; cache/tier/region/contract terms not independently established."
+      },
+      "openai_decisions": {
+        "input_per_million": 0.1,
+        "output_per_million": 0,
+        "url": "https://developers.openai.com/api/docs/guides/decisions#pricing-and-availability"
+      },
+      "ordinary_luna_api_reference": {
+        "input_per_million": 0.1,
+        "output_per_million": 0.5,
+        "tier": "Standard, short context; no cache read/write events or other surcharges",
+        "url": "https://developers.openai.com/api/docs/pricing"
+      },
+      "product_subscription": {
+        "input_per_million": null,
+        "output_per_million": null,
+        "plus_monthly_example": 20,
+        "pro_monthly_from_example": 100,
+        "url": "https://learn.chatgpt.com/docs/pricing",
+        "meaning": "Existing eligible native Codex subscription access and limits; no separate metered Platform/TypeSafe API charge for this route. Not free or unlimited; API rate cards do not estimate included tasks."
+      }
+    },
+    "illustrative_1000_requests": {
+      "requests": 1000,
+      "input_tokens_per_request": 1000,
+      "output_tokens_per_request": 100,
+      "input_tokens_total": 1000000,
+      "output_tokens_total": 100000,
+      "usd": {
+        "typesafe_jev": 0.042,
+        "openai_decisions": 0.1,
+        "ordinary_luna_api_reference": 0.15,
+        "product_subscription": null
+      }
+    },
+    "historical_460_same_token_reference_usd": {
+      "input_tokens": 284370,
+      "output_tokens": 11742,
+      "typesafe_jev": 0.01194354,
+      "openai_decisions": 0.028437,
+      "ordinary_luna_api_reference": 0.034308,
+      "product_subscription": null
+    },
+    "assumptions": "rate_in*input/1e6 + rate_out*output/1e6. Fixed same-token envelopes, not equal-wire workloads or observed vendor usage/bills. All reference input assumed uncached, with no billed cache writes; short context, Standard tier, no regional premium, tax, retries or extras. Native Jev token usage/cache split for this cohort is not established; subscription cost cannot be inferred from these token counts."
+  },
+  "public_result_sources": [
+    {
+      "dataset": "risk",
+      "commit": "42a9123a4ef42488aa775effdecb2f34a0d66a5a",
+      "url": "https://raw.githubusercontent.com/themsquared/jev-benchmark/42a9123a4ef42488aa775effdecb2f34a0d66a5a/results/jev-jev-latest.jsonl",
+      "sha256": "34f7f574a45de77205b85fc75c88b09b19f96395d851a60ebfed735286b4df52"
+    },
+    {
+      "dataset": "toxicity",
+      "commit": "f69fd43641ef756715e2238b36f0b40be36a3958",
+      "url": "https://raw.githubusercontent.com/supreethbare/decision-model-bench/f69fd43641ef756715e2238b36f0b40be36a3958/bench/results/jev/toxicity.jsonl",
+      "sha256": "3ed19312fb9a669f382ae03321696e90e5ecc54fb8bd01064aab07eee2b3feb3"
+    },
+    {
+      "dataset": "tool_select",
+      "commit": "f69fd43641ef756715e2238b36f0b40be36a3958",
+      "url": "https://raw.githubusercontent.com/supreethbare/decision-model-bench/f69fd43641ef756715e2238b36f0b40be36a3958/bench/results/jev/tool_select.jsonl",
+      "sha256": "31ab6af7ed128d116051693c81a0c763ac6013f37d8bd4ebbc06ad94bdb8d60b"
+    }
+  ],
+  "subscription_quota": {
+    "checked_at_utc": "2026-10-13",
+    "project_quota_measurements": null,
+    "model": "gpt-6-luna",
+    "official": {
+      "url": "https://learn.chatgpt.com/docs/pricing#token-rates",
+      "standard_paid_credits_per_million": {
+        "uncached_input": 2.5,
+        "cached_input": 0.25,
+        "output": 12.5
+      },
+      "included_quota_token_formula": null,
+      "local_message_background": {
+        "plans": [
+          "Plus",
+          "Standard Business"
+        ],
+        "window_hours": 5,
+        "estimated_range": [
+          350,
+          3000
+        ],
+        "not_adapter_http_capacity": true,
+        "url": "https://learn.chatgpt.com/docs/pricing#usage-limits"
+      },
+      "pro_currently_no_five_hour_limit": true,
+      "shared_weekly_limits_may_apply": true,
+      "fast_url": "https://learn.chatgpt.com/docs/agent-configuration/speed#fast-mode",
+      "fast_included_multiplier": 2.5,
+      "fast_paid_credit_multiplier": 2
+    },
+    "paid_credit_illustration": {
+      "measurement": false,
+      "basis": "Optional after-included-limit credit-billed Standard example; not included quota percent, purchase advice or activated fallback",
+      "requests": 1000,
+      "uncached_input_tokens_each": 1000,
+      "cached_input_tokens_each": 0,
+      "output_tokens_each": 100,
+      "standard_credits": 3.75,
+      "paid_credit_fast_credits": 7.5
+    },
+    "local_interval_method": {
+      "unit": "used percentage points within the same quota window",
+      "point_formula": "future_requests * displayed_delta_pp / comparable_requests",
+      "whole_percent_endpoint_rounding_error_pp": 0.5,
+      "displayed_delta_error_pp": 1,
+      "lower_formula": "future_requests * (displayed_delta_pp - 1) / comparable_requests",
+      "upper_formula": "future_requests * (displayed_delta_pp + 1) / comparable_requests",
+      "identified_only_if_delta_pp_greater_than": 1,
+      "requires": [
+        "same account/plan/workspace/window with unchanged reset identifier",
+        "same model/reasoning/speed tier/call path/request mix and generation/retry policy",
+        "settled meter, no shared/other account activity",
+        "physical generations/failures/unknown usage recorded"
+      ],
+      "forecast_scope": "Local stable-workload linear forecast before reset, meter saturation or model switch; not guaranteed capacity. Five-hour and weekly estimated separately; take tighter. No invented shared deduction ratio.",
+      "rounding_assumption": "Nearest whole-percent rounding assumed for the illustration; actual UI/server display rounding rule unverified",
+      "rounding_rule_verified": false
+    },
+    "synthetic_example": {
+      "measurement": false,
+      "comparable_requests": 100,
+      "displayed_delta_pp": 3,
+      "true_delta_rounding_interval_pp": [
+        2,
+        4
+      ],
+      "future_requests": 1000,
+      "point_prediction_pp": 30,
+      "rounding_only_prediction_interval_pp": [
+        20,
+        40
+      ],
+      "requests_per_pp_interval": [
+        25,
+        50
+      ],
+      "point_requests_per_pp": 33.333333333333336
+    },
+    "community_sources": [
+      {
+        "url": "https://github.com/openai/codex/issues/41541",
+        "created_at": "2026-08-29T14:29:31Z",
+        "updated_at": "2026-09-03T03:19:32Z",
+        "evidence_level": "Unverified original user report; method only",
+        "plan": "ProLite",
+        "reasoning": "high",
+        "model_pin": null,
+        "surface": "VS Code",
+        "samples": [
+          {
+            "dates": "2026-08-09 to 2026-08-14",
+            "sessions": 5,
+            "clients": [
+              "0.147.0-alpha.6.5",
+              "0.148.0-alpha.9"
+            ],
+            "total_tokens": 118730000,
+            "displayed_quota_pp_sum": 12,
+            "cached_input_fraction": 0.98076
+          },
+          {
+            "dates": "2026-08-28 to 2026-08-29",
+            "sessions": 5,
+            "clients": [
+              "0.150.0-alpha.8",
+              "0.150.0-alpha.12.2"
+            ],
+            "total_tokens": 142440000,
+            "displayed_quota_pp_sum": 17,
+            "cached_input_fraction": 0.97731
+          }
+        ],
+        "limits": [
+          "account-global whole-percent meter",
+          "author excluded resets/idle/overlapping main sessions; complete account isolation not independently checked",
+          "not a pinned Luna decision workload; no coefficient transferred"
+        ]
+      },
+      {
+        "url": "https://github.com/openai/codex/issues/41220",
+        "created_at": "2026-08-27T23:24:40Z",
+        "observation_update": "2026-09-16",
+        "evidence_level": "Unverified community comment; method/confounding only",
+        "plan": "Pro as identified by account-limit response, multiplier unknown",
+        "platform": "Windows",
+        "samples": [
+          {
+            "dates": "2026-08-31 to 2026-09-02",
+            "local_total_tokens": 3821936804,
+            "used_pp_before": 0,
+            "used_pp_after": 97,
+            "dominant_model": "Sol",
+            "dominant_fraction": 0.945,
+            "cached_input_fraction": 0.975,
+            "same_endpoint_reset_id": true
+          },
+          {
+            "dates": "2026-09-12 to 2026-09-16",
+            "local_total_tokens": 479026711,
+            "used_pp_before": 0,
+            "used_pp_after": 80,
+            "dominant_model": "Astra",
+            "dominant_fraction": 0.988,
+            "cached_input_fraction": 0.973,
+            "same_endpoint_reset_id": true
+          }
+        ],
+        "limits": [
+          "changed model mix",
+          "other machines/remote/background activity may be omitted",
+          "reasoning/client version not fixed in this selected comparison",
+          "not a verified entitlement reduction or Luna quota conversion"
+        ]
+      },
+      {
+        "url": "https://www.reddit.com/r/codex/comments/1wp0v6x/allowance_for_gpt_6_luna_sol_and_astra_measured/",
+        "publication_date": null,
+        "checked_at_utc": "2026-10-13",
+        "evidence_level": "Low-confidence original Luna user claim, excluded from numerical estimates",
+        "claimed_conditions": [
+          "Plus",
+          "fresh five-hour windows",
+          "Pi built-in API-price token valuation",
+          "no long context"
+        ],
+        "limits": [
+          "full raw token/cache/reasoning data unavailable in fetched post",
+          "API-dollar normalization is not included quota metering",
+          "uninterrupted windows and Pro multipliers not established"
+        ]
+      }
+    ]
+  },
+  "luna_010_measurement": {
+    "build_sha256": "dd3ba7401fa8505b5d1d6ad4e639a5fa6bf12da96bd9a704a99d90610208b650",
+    "date": "2026-10-13",
+    "endpoint": "/v1/systemone",
+    "concurrency": 1,
+    "sample": "Real public-460 cases sent one at a time to an own instance of the 0.1.0 build: 38 per explicit effort (12 risk, 13 toxicity, 13 tool_select); the default row is 20 of those cases under the shipped policy with no effort override. 0 errors, 0 cached input tokens. Not paired with the archived runs.",
+    "default_policy": "effort none for inputs < 8192 bytes (all public inputs)",
+    "by_effort": {
+      "none": {
+        "n": 38,
+        "p50_ms": 3000.3,
+        "p95_ms": 6166.6,
+        "upstream_ms_p50": 2324.8,
+        "correct": 34,
+        "accuracy": 0.8947,
+        "mean_input_tokens": 623.6,
+        "mean_output_tokens": 25.9,
+        "mean_reasoning_tokens": 0,
+        "api_usd_per_1000": 0.0753,
+        "credits_per_1000": 1.8824
+      },
+      "low": {
+        "n": 38,
+        "p50_ms": 2607.1,
+        "p95_ms": 3967.1,
+        "upstream_ms_p50": 2118.9,
+        "correct": 36,
+        "accuracy": 0.9474,
+        "mean_input_tokens": 623.6,
+        "mean_output_tokens": 25.9,
+        "mean_reasoning_tokens": 0,
+        "api_usd_per_1000": 0.0753,
+        "credits_per_1000": 1.8824
+      },
+      "medium": {
+        "n": 38,
+        "p50_ms": 3556.0,
+        "p95_ms": 7139.8,
+        "upstream_ms_p50": 3135.5,
+        "correct": 36,
+        "accuracy": 0.9474,
+        "mean_input_tokens": 623.6,
+        "mean_output_tokens": 45.2,
+        "mean_reasoning_tokens": 18.7,
+        "api_usd_per_1000": 0.085,
+        "credits_per_1000": 2.1239
+      },
+      "default": {
+        "n": 20,
+        "p50_ms": 2147.5,
+        "p95_ms": 5390.5,
+        "upstream_ms_p50": 1762.3,
+        "correct": 20,
+        "accuracy": 1.0,
+        "mean_input_tokens": 631.8,
+        "mean_output_tokens": 26.1,
+        "mean_reasoning_tokens": 0,
+        "api_usd_per_1000": 0.0762,
+        "credits_per_1000": 1.9051
+      }
+    },
+    "by_suite": {
+      "risk": {
+        "n": 12,
+        "effort": "none",
+        "p50_ms": 3286.9
+      },
+      "toxicity": {
+        "n": 13,
+        "effort": "none",
+        "p50_ms": 3286.4
+      },
+      "tool_select": {
+        "n": 13,
+        "effort": "none",
+        "p50_ms": 2542.9
+      }
+    }
+  }
+}

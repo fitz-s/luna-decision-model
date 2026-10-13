@@ -1,0 +1,60 @@
+# Luna compared with native Jev
+
+![Luna and native Jev: correct answers, median latency and Brier on three public suites.](assets/public-comparison.svg)
+
+| Suite | Correct: Luna / Jev | Brier (lower is better): Luna / Jev | p50 latency: Luna 0.1.0 / Jev |
+| --- | --- | --- | --- |
+| Tool-call risk (60) | 55 / 55 | 0.164 / 0.116 (multiclass) | 3.29 s / 0.42 s |
+| Toxicity (200) | 160 / 157 | 0.164 / 0.149 (binary) | 3.29 s / 0.15 s |
+| Tool selection (200) | 198 / 199 | 0.016 / 0.005 (multiclass) | 2.54 s / 0.15 s |
+
+Provenance: correct counts and Brier come from historical runs; Luna latency was measured on the 0.1.0 build on 2026-10-13 with 38 of these public cases (12 / 13 / 13), one request at a time at the shipped default effort; native Jev figures are its benchmark authors' published results. Details under [Sources](#sources).
+
+- **Accuracy** is similar on all three suites.
+- **Latency** is end-to-end wall time including network. Luna's overall p50 was 3.0 s and p95 6.2 s (a second 20-case run: p50 2.1 s); most of each request is the upstream model call (p50 2.1–2.3 s at effort none/low, measured inside the service), and local service overhead is the remainder. Native Jev's published p95 was 0.20–0.54 s.
+- **Calibration**: Luna's Brier score and selected-class (max-p) ECE were worse on all three suites. Binary and multiclass Brier use different definitions and are not averaged.
+
+## Reasoning effort
+
+The service sends effort `none` for inputs under 8,192 bytes, which covers every public case. The same 38 cases at each effort:
+
+| Effort | p50 | p95 | Correct | Output tokens (reasoning) per request | API cost per 1,000 | Credits per 1,000 |
+| --- | --- | --- | --- | --- | --- | --- |
+| `none` (default) | 3.0 s | 6.2 s | 34 / 38 | 25.9 (0) | $0.075 | 1.88 |
+| `low` | 2.6 s | 4.0 s | 36 / 38 | 25.9 (0) | $0.075 | 1.88 |
+| `medium` | 3.6 s | 7.1 s | 36 / 38 | 45.2 (18.7) | $0.085 | 2.12 |
+
+`low` and `medium` each scored 36/38 vs 34/38 for `none`, within noise at n = 38. `low` produced no reasoning tokens, cost the same and was faster on this sample; `medium` cost about 13% more and was slower. The sample does not justify changing the default.
+
+Risk uses 60 author-labelled agent tool calls; toxicity binarizes Civil Comments crowd scores at 0.5; tool selection uses BFCL multiple-function selection gold (function choice only, not arguments or execution). Native Jev ran as `jev-latest` for risk and `jev-1.13.0` for the other two. Unrounded values, Wilson intervals, calibration bins and ECE: [comparison-data.json](comparison-data.json).
+
+## Cost per 1,000 requests
+
+![Per 1,000 requests: $0.026 to $0.075 on API rate cards, about 1.9 credits at GPT-6 Luna's credit rate.](assets/cost.svg)
+
+At the token mix measured in the archived Luna run (284,370 input and 11,742 output tokens over 460 requests, about **618 input + 26 output tokens per request**):
+
+| Route | Rate per 1M tokens (input / output) | Per 1,000 requests |
+| --- | --- | --- |
+| [Native TypeSafe Jev](https://typesafe.ai/blog/introducing-system-one-models-and-jev), same token mix | $0.042 / no charge | $0.026 |
+| [OpenAI Decisions](https://developers.openai.com/api/docs/guides/decisions#pricing-and-availability), `gpt-6-luna` | $0.10 / no charge | $0.062 |
+| [GPT-6 Luna API](https://developers.openai.com/api/docs/pricing), Standard short context | $0.10 / $0.50 | $0.075 |
+| **Luna Decision Model**, at [GPT-6 Luna's credit rate](https://learn.chatgpt.com/docs/pricing#token-rates) | 2.5 / 12.5 credits | ≈ 1.9 credits |
+
+Computation, once: per 1,000 requests the mix is 0.618M input + 0.0255M output tokens, so Luna API = 0.618 × $0.10 + 0.0255 × $0.50 = $0.075, and credits = 0.618 × 2.5 + 0.0255 × 12.5 ≈ 1.9. [Official Codex pricing](https://learn.chatgpt.com/docs/pricing) lists Plus at $20/month and Pro from $100/month. The credit figure applies the credit rate to this token mix; it is not a published conversion to included plan use, which you measure with [QUOTA.md](QUOTA.md).
+
+## When to use it
+
+Use it to reuse an existing Codex subscription and existing Jev callers. If latency or calibrated probability thresholds matter most, use the dedicated services; for known symbols, plain text search is faster still. The pinned [Jev application](https://github.com/BorisLeMeec/jev/blob/e81c1d006b8b23a616486610f311039088521d0c/README.md#results) reports fewer agent tokens for semantic find, ask and Read Hook narrowing but no wall-clock saving; those experiments have not been rerun with Luna.
+
+## Sources
+
+- Luna 0.1.0 latency and reasoning effort: `luna_010_measurement` in [comparison-data.json](comparison-data.json) (build `dd3ba740`, 2026-10-13).
+- Luna accuracy and Brier: `acceptance-20261011/public-460-metrics.json` in the maintainer's local archive (not in the repository; SHA-256 recorded in [comparison-data.json](comparison-data.json)), produced by the retained `run_public.py` and `score_public.py` runners, which keep gold labels out of inference requests.
+- [Tool-call risk benchmark](https://github.com/themsquared/jev-benchmark/tree/42a9123a4ef42488aa775effdecb2f34a0d66a5a), commit `42a9123`, published September 2026.
+- [Toxicity and tool-selection benchmark](https://github.com/supreethbare/decision-model-bench/tree/f69fd43641ef756715e2238b36f0b40be36a3958), commit `f69fd43`, September 2026, one run with per-case predictions.
+- Official OpenAI statements and prices: [OPENAI_SOURCES.md](OPENAI_SOURCES.md).
+
+## Notes
+
+Luna's correct counts and Brier come from an archived summary of an earlier build whose per-request traces are unavailable; the 0.1.0 latency and effort figures use 38 cases with 0 errors and 0 cached input tokens. Native Jev's figures are its benchmark authors' published results. None of these runs are paired, so they support no exact speed ratio or overall winner. Costs are rate-card arithmetic at one historical token mix, assuming uncached input and no regional, long-context or tier premiums, tax or retries; your mix will differ. Credit figures use OpenAI's published Luna credit rates, which OpenAI says do not by themselves determine included plan use. OpenAI's own Decisions speed claim is not a measurement of this project.

@@ -1,0 +1,77 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 760 322" role="img" aria-labelledby="t d">
+<title id="t">Similar accuracy, higher recorded latency, worse Brier</title>
+<desc id="d">Luna and native Jev correct rates, median latency and Brier score on risk, toxicity and tool selection.</desc>
+<style>
+:root{color-scheme:light dark;--ink:#1f2328;--mute:#59636e;--line:#d1d9e0;--luna:#2a78d6;--jev:#eb6834;--cloud:#0f6cbd;--api:#6e7781}
+@media (prefers-color-scheme:dark){:root{--ink:#e6edf3;--mute:#9198a1;--line:#3d444d;--luna:#3987e5;--jev:#d95926;--cloud:#58a6ff;--api:#8b949e}}
+text{font:14px -apple-system,BlinkMacSystemFont,"Segoe UI",Helvetica,Arial,sans-serif;fill:var(--ink)}
+.m{fill:var(--mute)}.s{font-size:13px}.b{font-weight:600}.h{font-size:19px;font-weight:700}.c{text-anchor:middle}
+.api{fill:var(--api)}.pill{fill:none;stroke:var(--luna);stroke-width:2}.luna{fill:var(--luna)}.jev{fill:var(--jev)}.ln{stroke:var(--line);stroke-width:1;fill:none}
+.box{fill:none;stroke:var(--line);stroke-width:1.5}.cloud{fill:none;stroke:var(--cloud);stroke-width:2}
+.ar{stroke:var(--mute);stroke-width:1.8;fill:none}.arh{fill:var(--mute)}
+</style>
+<text x="16" y="28" class="h">Similar accuracy, higher recorded latency, worse Brier</text>
+<rect x="16" y="46" width="12" height="12" rx="2" class="luna"/>
+<text x="34" y="57" class="s">Luna Decision Model (GPT-6 Luna)</text>
+<rect x="262" y="46" width="12" height="12" rx="2" class="jev"/>
+<text x="280" y="57" class="s">Native Jev (TypeSafe cloud)</text>
+<text x="128" y="92" class="m s b">Correct answers</text>
+<text x="350" y="92" class="m s b">Median latency (p50)</text>
+<text x="605" y="92" class="m s b">Brier (lower is better)</text>
+<line x1="16" y1="100" x2="744" y2="100" class="ln"/>
+<text x="16" y="125" class="b">Risk</text>
+<text x="16" y="143" class="m s">multiclass Brier</text>
+<rect x="128" y="108" width="82.5" height="14" rx="2" class="luna"/>
+<text x="216.5" y="119" class="s">91.7% · 55/60</text>
+<rect x="350" y="108" width="90.0" height="14" rx="2" class="luna"/>
+<text x="446.0" y="119" class="s">3.29 s</text>
+<rect x="605" y="108" width="79.9" height="14" rx="2" class="luna"/>
+<text x="690.8916622901913" y="119" class="s">0.164</text>
+<rect x="128" y="130" width="82.5" height="14" rx="2" class="jev"/>
+<text x="216.5" y="141" class="s">91.7% · 55/60</text>
+<rect x="350" y="130" width="11.5" height="14" rx="2" class="jev"/>
+<text x="367.54496638169707" y="141" class="s">0.42 s</text>
+<rect x="605" y="130" width="56.7" height="14" rx="2" class="jev"/>
+<text x="667.6549035516067" y="141" class="s">0.116</text>
+<line x1="128" y1="104" x2="128" y2="148" class="ln"/>
+<line x1="350" y1="104" x2="350" y2="148" class="ln"/>
+<line x1="605" y1="104" x2="605" y2="148" class="ln"/>
+<line x1="16" y1="162" x2="744" y2="162" class="ln"/>
+<text x="16" y="187" class="b">Toxicity</text>
+<text x="16" y="205" class="m s">binary Brier</text>
+<rect x="128" y="170" width="72.0" height="14" rx="2" class="luna"/>
+<text x="206.0" y="181" class="s">80.0% · 160/200</text>
+<rect x="350" y="170" width="90.0" height="14" rx="2" class="luna"/>
+<text x="445.98630928838725" y="181" class="s">3.29 s</text>
+<rect x="605" y="170" width="80.0" height="14" rx="2" class="luna"/>
+<text x="691.0" y="181" class="s">0.164</text>
+<rect x="128" y="192" width="70.7" height="14" rx="2" class="jev"/>
+<text x="204.65" y="203" class="s">78.5% · 157/200</text>
+<rect x="350" y="192" width="4.1" height="14" rx="2" class="jev"/>
+<text x="360.1459758722417" y="203" class="s">0.15 s</text>
+<rect x="605" y="192" width="72.9" height="14" rx="2" class="jev"/>
+<text x="683.9326147361229" y="203" class="s">0.149</text>
+<line x1="128" y1="166" x2="128" y2="210" class="ln"/>
+<line x1="350" y1="166" x2="350" y2="210" class="ln"/>
+<line x1="605" y1="166" x2="605" y2="210" class="ln"/>
+<line x1="16" y1="224" x2="744" y2="224" class="ln"/>
+<text x="16" y="249" class="b">Tool selection</text>
+<text x="16" y="267" class="m s">multiclass Brier</text>
+<rect x="128" y="232" width="89.1" height="14" rx="2" class="luna"/>
+<text x="223.1" y="243" class="s">99.0% · 198/200</text>
+<rect x="350" y="232" width="69.6" height="14" rx="2" class="luna"/>
+<text x="425.62822112020444" y="243" class="s">2.54 s</text>
+<rect x="605" y="232" width="7.6" height="14" rx="2" class="luna"/>
+<text x="618.5860129702389" y="243" class="s">0.016</text>
+<rect x="128" y="254" width="89.5" height="14" rx="2" class="jev"/>
+<text x="223.55" y="265" class="s">99.5% · 199/200</text>
+<rect x="350" y="254" width="4.1" height="14" rx="2" class="jev"/>
+<text x="360.05056360109836" y="265" class="s">0.15 s</text>
+<rect x="605" y="254" width="2.3" height="14" rx="2" class="jev"/>
+<text x="613.3073192602963" y="265" class="s">0.005</text>
+<line x1="128" y1="228" x2="128" y2="272" class="ln"/>
+<line x1="350" y1="228" x2="350" y2="272" class="ln"/>
+<line x1="605" y1="228" x2="605" y2="272" class="ln"/>
+<line x1="16" y1="286" x2="744" y2="286" class="ln"/>
+<text x="16" y="310" class="m s">Accuracy, Brier: 460 public tasks. Luna latency: 0.1.0 build, 12–13 cases per suite.</text>
+</svg>

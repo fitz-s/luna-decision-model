@@ -1,0 +1,11 @@
+include LICENSE THIRD_PARTY_NOTICES.md README.md README.zh-CN.md INSTALL.md TECHNICAL_REFERENCE.md CHANGELOG.md CONTRIBUTING.md AGENTS.md CLAUDE.md .gitignore .gitattributes
+recursive-include jev_luna *.py *.mjs *.patch *.md *.go *.json
+recursive-include luna_decision_model *.py
+recursive-include scripts *.py
+recursive-include tests *.py *.json
+recursive-include docs *.md *.json *.svg
+recursive-include skills *.md
+recursive-include .github *.yml
+global-exclude __pycache__ *.py[cod] .DS_Store
+prune evidence
+prune reports

@@ -1,0 +1,29 @@
+[build-system]
+requires = ["setuptools>=77"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "luna-decision-model"
+version = "0.1.0"
+description = "Unofficial local service that runs Jev / TypeSafe decision calls on GPT-6 Luna through your own Codex subscription"
+requires-python = ">=3.10"
+license = "MIT"
+license-files = ["LICENSE", "THIRD_PARTY_NOTICES.md"]
+readme = "README.md"
+dependencies = ["aiohttp>=3.12,<4", "filelock>=3.19,<4"]
+
+[project.optional-dependencies]
+openai = ["openai>=3.28,<4"]
+mcp = ["mcp>=1.30,<2"]
+typesafe = ["typesafe-sdk>=0.6,<0.7"]
+test = ["typesafe-sdk>=0.6", "openai>=3.28", "pytest>=8", "pytest-asyncio>=0.24", "jsonschema>=4.23,<5"]
+
+[project.scripts]
+luna-decision = "luna_decision_model:main"
+jev-luna = "jev_luna:main"
+
+[tool.setuptools.packages.find]
+include = ["luna_decision_model*", "jev_luna*"]
+
+[tool.setuptools.package-data]
+jev_luna = ["assets/*.mjs", "assets/*.patch", "assets/*.md", "assets/*.json", "assets/contracts/*.go"]

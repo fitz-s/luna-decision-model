@@ -1,0 +1,65 @@
+{
+  "version": 1,
+  "profiles": {
+    "jev-upstream": {
+      "kind": "go",
+      "repository": "https://github.com/BorisLeMeec/jev",
+      "commit": "e81c1d006b8b23a616486610f311039088521d0c",
+      "files": {
+        "go.mod": "f030567557e04aed14258a56767fe5736c780ea7c12aaafcdf5a0384a52b59f4",
+        "LICENSE": "fabe2aae254c49b6651541422d3a554af73334a9bc72b48fff5bfd3c2ac60ec2",
+        "internal/usage/report.go": "2d8e65a425d26aafac1b1cdf753952a5f98443ef382b5b6c927a993c07382f3a",
+        "internal/usage/usage.go": "834c53259aa5dee0e43e5db191c2e72062afe2c825d7f43c285e833c43c09bba",
+        "internal/typesafe/client.go": "a8a524a922eee09f2de1c7994ea008cf329a6b086e72f87b34708d1426de071d",
+        "internal/scan/scan.go": "58da6d082bc0f7d07c17a7a99e7a1be357edeb5c62390bbb53b06d244726e1d3",
+        "internal/scan/scan_test.go": "72473da233b280697713c6524a83e1b444f030e0522eab0ad2a8a90c51ce7b7d",
+        "internal/run/hook.go": "d917bbe9ed08b350ff1b888bd5015ba8491c5ed0ed2b3889f106e055486f4efe",
+        "internal/run/permute_test.go": "4f2ccf46ad1959f41d5c9dfc604db68fe8396a2a3325e504c56831da1dec363b",
+        "internal/run/locate.go": "d69cd0ebfd66e6adececb5d85be12d59d85ef62007529552f75b6790355af5c8",
+        "internal/run/ask.go": "2662a0eee7c6ca02729c19fd80e1630738ca8259c846f3737f473d86b910eab1",
+        "internal/run/scan.go": "5f32712bebf274a93041825f78f7c078d544023aeb9922c4ab768768655ef806",
+        "internal/run/find.go": "eb812535ed47a3499a541071ac933af8e5d26af464467ac48c537297e79b6be2",
+        "internal/run/hook_test.go": "aee257abbe9c9ac8ca050407b7b3a123bb77849826918433dff8166228edf1b1",
+        "internal/run/probe.go": "df80d8104c44faccc3c709a01271ea0d29a0e65e53b8cf5fa19575905735972d",
+        "internal/run/lint.go": "1c2dc156ee6a4e780fc9d26cf3f0811931550a57400ce82e763eb3db55ead793",
+        "cmd/jev/main.go": "cb8e6ec38aa208f5dddce843ae612372a4f38155bea96a294aeafcc44e4d519a"
+      },
+      "patches": [
+        "jev-upstream.patch",
+        "jev-hook.patch"
+      ],
+      "patched_files": {
+        "internal/typesafe/client.go": "efa3ee8c850cc789e402632124fd1a99f712634546a6330c74496f4aafb15516",
+        "internal/run/hook.go": "7d751bb0d139f49ed35e94102e36cc0aa9a2a37bf91aee62106f25393673f354"
+      }
+    },
+    "codex-selector": {
+      "kind": "node",
+      "repository": "https://github.com/jcressler/jev-codex-token-saver",
+      "commit": "1e1214bd7a1d7b2d3ee32bf1b8a88bbf9cd9d820",
+      "files": {
+        "LICENSE": "7e3d6fe13eb6047a58a27e88b55c34c19ca95c57029b3c4aa8620e92ccaf9375",
+        "package-lock.json": "4a6fd61a5d5ddcb77824e2ac4fb3f20f2a7bc2fb55898357c636ca6586edb356",
+        "package.json": "4bccf7042bc00ba4e401e71ad152aa0202b457951ba25eb68cef2fd58f350763",
+        "dist/server.mjs": "4052fa791b47fbea33d60a1cbf1c1c8c890169f2f0c79a56f759fc9daa956ee7",
+        "src/evidence-service.mjs": "8a11f1332a04301a7277e8e6d538b3dc0d39ace1fc4d4ec8c94bcda98a8b1a13",
+        "src/investigator.mjs": "868d9406b4fa0ac6ce246a0304e72aa1fc1ae0d488b9a9c10c87675179ad4127",
+        "src/mcp-server.mjs": "0cf8d5c44f0ba01d8cf9cd9d1bd2bf15de0d43368e396ee281b45b6f6e7a89f6"
+      },
+      "patches": [
+        "codex-selector.patch"
+      ],
+      "bundle": "dist/server.mjs",
+      "patched_files": {}
+    }
+  },
+  "patches": {
+    "jev-hook.patch": "e3457e6d6112da869ac64200f961c04af184303e280264a373eaaf6e4ac7b90f",
+    "jev-upstream.patch": "45437fd7bd8fa798161eab597663b105d7ea062e35ff1dae5877aa9c571f1a70",
+    "codex-selector.patch": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  },
+  "contracts": {
+    "contracts/local_test.go": "6387fa58a15fd12122861d432e01ee76cd5f3deed0567e74b5520591420daa53",
+    "contracts/hook_test.go": "7cff6fc24ddfd07b06d55dfd2f9ab1fb9aea2f429b7f4bbfc849cd5bd3ad8568"
+  }
+}

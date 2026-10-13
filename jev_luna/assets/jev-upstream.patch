@@ -1,0 +1,172 @@
+--- a/internal/typesafe/client.go
++++ b/internal/typesafe/client.go
+@@ -13,27 +13,95 @@
+ 	"io"
+ 	"math/rand"
+ 	"net/http"
++	"net/url"
+ 	"os"
++	"path/filepath"
++	"runtime"
++	"strconv"
+ 	"strings"
+ 	"sync"
+ 	"time"
+ )
+ 
+ const (
+-	endpoint     = "https://api.typesafe.ai/v1/systemone"
+-	DefaultModel = "jev-latest"
++	defaultEndpoint = "http://127.0.0.1:20141/v1/systemone"
++	DefaultModel    = "gpt-6-luna"
+ )
+ 
+-// Key reads the API key. TYPE_SAFE_AI_KEY is the name used in this project's
+-// setup; the others are what the official SDKs look for, accepted so a machine
+-// that already has one configured works without extra setup.
++// checkedEndpoint prevents local credentials from reaching a changed remote endpoint.
++func checkedEndpoint() (string, error) {
++	value := Endpoint()
++	u, err := url.Parse(value)
++	if err != nil || u.Scheme != "http" || (u.Hostname() != "127.0.0.1" && u.Hostname() != "localhost" && u.Hostname() != "::1") || u.Port() == "" || u.User != nil || u.Path != "/v1/systemone" || u.RawQuery != "" || u.Fragment != "" {
++		return "", fmt.Errorf("JEV_URL must be this app's loopback /v1/systemone endpoint")
++	}
++	return value, nil
++}
++
++// Key loads only this app's local service credential; no native API-key source is read.
+ func Key() (string, error) {
+-	for _, name := range []string{"TYPE_SAFE_AI_KEY", "TYPESAFE_API_KEY", "TYPESAFE_AI_API_KEY"} {
+-		if v := strings.TrimSpace(os.Getenv(name)); v != "" {
+-			return v, nil
+-		}
+-	}
+-	return "", fmt.Errorf("no API key: set TYPE_SAFE_AI_KEY in your environment")
++	if _, err := checkedEndpoint(); err != nil {
++		return "", err
++	}
++	home := strings.TrimSpace(os.Getenv("JEV_LUNA_HOME"))
++	if home != "" && !filepath.IsAbs(home) {
++		return "", fmt.Errorf("JEV_LUNA_HOME must be absolute")
++	}
++	if home == "" {
++		userHome, err := os.UserHomeDir()
++		if err != nil {
++			return "", err
++		}
++		if runtime.GOOS == "darwin" {
++			home = filepath.Join(userHome, "Library", "Application Support", "jev-luna")
++		} else if runtime.GOOS == "windows" {
++			base := os.Getenv("APPDATA")
++			if base == "" {
++				base = filepath.Join(userHome, "AppData", "Roaming")
++			}
++			home = filepath.Join(base, "jev-luna")
++		} else {
++			base := os.Getenv("XDG_CONFIG_HOME")
++			if base == "" {
++				base = filepath.Join(userHome, ".config")
++			}
++			home = filepath.Join(base, "jev-luna")
++		}
++	}
++	path := filepath.Join(home, "service.key")
++	info, err := os.Lstat(path)
++	if err != nil || !info.Mode().IsRegular() || info.Size() > 1024 || info.Mode().Perm()&0077 != 0 {
++		return "", fmt.Errorf("start jev-luna serve; local service.key must be a protected regular file")
++	}
++	file, err := os.Open(path)
++	if err != nil {
++		return "", err
++	}
++	defer file.Close()
++	opened, err := file.Stat()
++	if err != nil || !opened.Mode().IsRegular() || !os.SameFile(info, opened) || opened.Size() > 1024 {
++		return "", fmt.Errorf("local service credential changed while opening")
++	}
++	raw, err := io.ReadAll(io.LimitReader(file, 1025))
++	if err != nil {
++		return "", err
++	}
++	if len(raw) > 1024 {
++		return "", fmt.Errorf("local service credential exceeded its byte budget")
++	}
++	key := strings.TrimSpace(string(raw))
++	if !strings.HasPrefix(key, "jvl_local_") || len(key) < 40 {
++		return "", fmt.Errorf("invalid local service credential")
++	}
++	return key, nil
++}
++
++// Endpoint preserves the native Decision route on an explicitly local service.
++func Endpoint() string {
++	if value := strings.TrimSpace(os.Getenv("JEV_URL")); value != "" {
++		return value
++	}
++	return defaultEndpoint
+ }
+ 
+ type Client struct {
+@@ -66,7 +134,7 @@
+ 	return &Client{
+ 		key:         k,
+ 		model:       model,
+-		http:        &http.Client{Timeout: 120 * time.Second},
++		http:        &http.Client{Timeout: 120 * time.Second, CheckRedirect: func(req *http.Request, via []*http.Request) error { return http.ErrUseLastResponse }},
+ 		minInterval: time.Minute / 1000,
+ 	}, nil
+ }
+@@ -148,7 +216,7 @@
+ func (e *apiError) Error() string {
+ 	switch e.status {
+ 	case http.StatusUnauthorized:
+-		return "401 unauthorized: the API key was rejected (check TYPE_SAFE_AI_KEY)"
++		return "401 unauthorized: check the local service credential and run jev-luna login for the selected app account"
+ 	case http.StatusUnprocessableEntity:
+ 		return fmt.Sprintf("422 the request was malformed: %s", e.body)
+ 	case http.StatusServiceUnavailable:
+@@ -240,12 +308,30 @@
+ 	if err := c.reserve(ctx); err != nil {
+ 		return nil, err
+ 	}
++	endpoint, err := checkedEndpoint()
++	if err != nil {
++		return nil, err
++	}
+ 	req, err := http.NewRequestWithContext(ctx, http.MethodPost, endpoint, bytes.NewReader(body))
+ 	if err != nil {
+ 		return nil, err
+ 	}
+ 	req.Header.Set("Authorization", "Bearer "+c.key)
+ 	req.Header.Set("Content-Type", "application/json")
++	// Preserve the original per-HTTP-attempt timeout and any caller deadline.
++	remaining := c.http.Timeout
++	if deadline, ok := ctx.Deadline(); ok {
++		parentRemaining := time.Until(deadline)
++		if parentRemaining <= 0 {
++			return nil, ctx.Err()
++		}
++		if remaining <= 0 || parentRemaining < remaining {
++			remaining = parentRemaining
++		}
++	}
++	if remaining > 0 {
++		req.Header.Set("X-Decide-D-Timeout-Ms", strconv.FormatInt(max(1, remaining.Milliseconds()), 10))
++	}
+ 
+ 	httpResp, err := c.http.Do(req)
+ 	if err != nil {
+@@ -253,9 +339,12 @@
+ 	}
+ 	defer httpResp.Body.Close()
+ 
+-	raw, err := io.ReadAll(httpResp.Body)
++	raw, err := io.ReadAll(io.LimitReader(httpResp.Body, 64*1024*1024+1))
+ 	if err != nil {
+ 		return nil, fmt.Errorf("reading response: %w", err)
++	}
++	if len(raw) > 64*1024*1024 {
++		return nil, fmt.Errorf("local response exceeded its operational byte budget")
+ 	}
+ 	if c.Debug != nil {
+ 		fmt.Fprintf(c.Debug, "--- POST %s -> %d ---\n%s\n", endpoint, httpResp.StatusCode, raw)

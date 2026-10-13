@@ -1,0 +1,32 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 760 298" role="img" aria-labelledby="t d">
+<title id="t">Per 1,000 requests: $0.026–$0.075 on APIs, ≈1.9 credits on a Codex plan</title>
+<desc id="d">Cost of 1,000 requests on three API rate cards in US dollars, and on Luna Decision Model as credits at Luna's credit rate.</desc>
+<style>
+:root{color-scheme:light dark;--ink:#1f2328;--mute:#59636e;--line:#d1d9e0;--luna:#2a78d6;--jev:#eb6834;--cloud:#0f6cbd;--api:#6e7781}
+@media (prefers-color-scheme:dark){:root{--ink:#e6edf3;--mute:#9198a1;--line:#3d444d;--luna:#3987e5;--jev:#d95926;--cloud:#58a6ff;--api:#8b949e}}
+text{font:14px -apple-system,BlinkMacSystemFont,"Segoe UI",Helvetica,Arial,sans-serif;fill:var(--ink)}
+.m{fill:var(--mute)}.s{font-size:13px}.b{font-weight:600}.h{font-size:19px;font-weight:700}.c{text-anchor:middle}
+.api{fill:var(--api)}.pill{fill:none;stroke:var(--luna);stroke-width:2}.luna{fill:var(--luna)}.jev{fill:var(--jev)}.ln{stroke:var(--line);stroke-width:1;fill:none}
+.box{fill:none;stroke:var(--line);stroke-width:1.5}.cloud{fill:none;stroke:var(--cloud);stroke-width:2}
+.ar{stroke:var(--mute);stroke-width:1.8;fill:none}.arh{fill:var(--mute)}
+</style>
+<text x="16" y="28" class="h">Per 1,000 requests: $0.026–$0.075 on APIs, ≈1.9 credits on a Codex plan</text>
+<text x="240" y="62" class="m s b">API rate cards, USD</text>
+<text x="16" y="90" class="">Native Jev API</text>
+<rect x="240" y="76" width="118.4" height="18" rx="2" class="api"/>
+<text x="364.4" y="90" class="s">$0.026</text>
+<text x="16" y="122" class="">OpenAI Decisions API</text>
+<rect x="240" y="108" width="281.8" height="18" rx="2" class="api"/>
+<text x="527.8" y="122" class="s">$0.062</text>
+<text x="16" y="154" class="">GPT-6 Luna API</text>
+<rect x="240" y="140" width="340.0" height="18" rx="2" class="api"/>
+<text x="586.0" y="154" class="s">$0.075</text>
+<line x1="240" y1="70" x2="240" y2="164" class="ln"/>
+<line x1="16" y1="178" x2="744" y2="178" class="ln"/>
+<text x="240" y="202" class="m s b">Codex plan, credit-rate equivalent</text>
+<text x="16" y="226" class="b">Luna Decision Model</text>
+<rect x="240" y="210" width="330" height="32" rx="8" class="pill"/>
+<text x="405" y="231" class="b c">≈1.9 credits at Luna's credit rate</text>
+<line x1="16" y1="262" x2="744" y2="262" class="ln"/>
+<text x="16" y="286" class="m s">Same token mix for every row: 618 input / 26 output tokens per request (460 public tasks).</text>
+</svg>

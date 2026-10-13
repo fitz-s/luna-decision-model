@@ -1,0 +1,45 @@
+--- a/internal/run/hook.go
++++ b/internal/run/hook.go
+@@ -39,12 +39,12 @@
+ 
+ type hookOutput struct {
+ 	HookSpecificOutput *hookSpecific `json:"hookSpecificOutput,omitempty"`
+-	AdditionalContext  string        `json:"additionalContext,omitempty"`
+ }
+ 
+ type hookSpecific struct {
+-	HookEventName string         `json:"hookEventName"`
+-	UpdatedInput  map[string]any `json:"updatedInput,omitempty"`
++	HookEventName     string         `json:"hookEventName"`
++	UpdatedInput      map[string]any `json:"updatedInput,omitempty"`
++	AdditionalContext string         `json:"additionalContext,omitempty"`
+ }
+ 
+ // passThrough emits the empty decision: the read proceeds exactly as written.
+@@ -163,19 +163,16 @@
+ 		offset = lines - window
+ 	}
+ 
++	updated := make(map[string]any, len(in.ToolInput)+2)
++	for key, value := range in.ToolInput {
++		updated[key] = value
++	}
++	updated["offset"], updated["limit"] = offset, window
+ 	return json.NewEncoder(os.Stdout).Encode(hookOutput{
+-		HookSpecificOutput: &hookSpecific{
+-			HookEventName: "PreToolUse",
+-			UpdatedInput: map[string]any{
+-				"file_path": path,
+-				"offset":    offset,
+-				"limit":     window,
+-			},
+-		},
+-		AdditionalContext: fmt.Sprintf(
++		HookSpecificOutput: &hookSpecific{HookEventName: "PreToolUse", UpdatedInput: updated, AdditionalContext: fmt.Sprintf(
+ 			"jev narrowed this Read: %s is %d lines, showing %d-%d (match at line %d, confidence %.2f). "+
+ 				"Read it again with an explicit offset or limit to see any other part — nothing was removed from the file.",
+-			filepath.Base(path), lines, offset, offset+window-1, got.Line, got.Conf),
++			filepath.Base(path), lines, offset, offset+window-1, got.Line, got.Conf)},
+ 	})
+ }
+ 
