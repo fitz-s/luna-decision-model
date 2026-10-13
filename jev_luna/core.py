@@ -8,14 +8,14 @@ normalisation and the published System One formulas derive typed answers and con
 The default transport reads the user's existing Codex ChatGPT login and sends an ordinary Responses stream over
 official HTTPS. No alternate billing route or API-key fallback is supported.
 """
-import base64, binascii, hashlib, hmac, http.client, json, math, os, re, select, socket, sys, threading, time, uuid
+import base64, binascii, contextvars, hashlib, hmac, http.client, json, math, os, queue, re, select, socket, sys, threading, time, uuid
 from collections import OrderedDict
 from concurrent.futures import ThreadPoolExecutor
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from urllib.parse import urlsplit
 from .validation import loads as strict_json_loads
 from .errors import Reject, bad
-from .lifecycle import RequestContext, bind, current_context, attempt_batch
+from .lifecycle import Attempt, RequestContext, bind, current_context, attempt_batch
 from .doctor import identity
 
 TRANSPORT = os.environ.get("DECIDE_D_TRANSPORT", "subscription")
@@ -36,7 +36,7 @@ SAFE_ID = re.compile(r"^[A-Za-z0-9_.-]{1,64}$")
 _slots = threading.BoundedSemaphore(int(os.environ.get("DECIDE_D_CONCURRENCY", "4")))
 _cache_lock = threading.Lock()
 _cache, _flights = OrderedDict(), {}
-_stats = {"upstream_calls": 0, "cache_hits": 0, "coalesced": 0, "active_calls": 0}
+_stats = {"upstream_calls": 0, "cache_hits": 0, "coalesced": 0, "active_calls": 0, "hedges": 0}
 with open(__file__, "rb") as source:
     SOURCE_SHA256 = hashlib.sha256(source.read()).hexdigest()
 BUILD_SHA256 = identity()
@@ -200,6 +200,19 @@ if SERVICE_TIER not in ("default", "fast"):
 REASONING_EFFORT = os.environ.get("LDM_REASONING_EFFORT", "auto")
 if REASONING_EFFORT not in ("auto", "none", "low", "medium", "high"):
     raise ValueError("LDM_REASONING_EFFORT must be auto, none, low, medium or high")
+# Codex Responses Lite request profile and Responses WebSocket transport; both fall back to standard HTTP.
+RESPONSES_LITE = os.environ.get("LDM_RESPONSES_LITE", "0")
+if RESPONSES_LITE not in ("0", "1"):
+    raise ValueError("LDM_RESPONSES_LITE must be 0 or 1")
+RESPONSES_LITE = RESPONSES_LITE == "1"
+UPSTREAM_TRANSPORT = os.environ.get("LDM_TRANSPORT", "http")
+if UPSTREAM_TRANSPORT not in ("http", "websocket"):
+    raise ValueError("LDM_TRANSPORT must be http or websocket")
+# Delayed hedge: milliseconds without output text after send before a second attempt; 0 disables.
+HEDGE_AFTER_MS = os.environ.get("LDM_HEDGE_AFTER_MS", "0")
+if not re.fullmatch(r"[0-9]{1,6}", HEDGE_AFTER_MS) or int(HEDGE_AFTER_MS) >= DEADLINE*1000:
+    raise ValueError("LDM_HEDGE_AFTER_MS must be a whole number of milliseconds below the request deadline")
+HEDGE_AFTER_MS = int(HEDGE_AFTER_MS)
 
 SYSTEM = ("You are a decision readout. Evaluate independent questions against shared evidence. For a yes/no question, "
           "give p_true between 0 and 1. For choice or score questions, give nonnegative relative likelihood weights for "
@@ -283,8 +296,17 @@ def build_upstream(state, qs):
     return readout_profiles.apply(payload, qs, READOUT_PROFILE)
 
 
+def _protocols():
+    """Configured versus active after any process-lifetime capability fallback."""
+    from .transport import unavailable
+    websocket = UPSTREAM_TRANSPORT == "websocket" and "websocket" not in unavailable
+    return {"upstream_protocol": "responses-websocket" if websocket else "responses-sse",
+            "upstream_transport": {"configured": UPSTREAM_TRANSPORT, "active": "websocket" if websocket else "http"},
+            "responses_lite": {"configured": RESPONSES_LITE, "active": RESPONSES_LITE and "responses_lite" not in unavailable}}
+
+
 def transport_settings():
-    return {"transport": TRANSPORT}
+    return {"transport": TRANSPORT, "upstream_transport": UPSTREAM_TRANSPORT, "responses_lite": RESPONSES_LITE}
 
 
 def prepare_auth(context):
@@ -472,102 +494,231 @@ def _infer_batch(state, qs, deadline):
                       questions=[{'original_id': q['id'], 'readout_id': f'q{i}'} for i, q in enumerate(qs)],
                       question_count=len(qs), outcome_count=sum(len(q['opts']) for q in qs),
                       reasoning_effort=payload['reasoning']['effort'], readout_profile=READOUT_PROFILE, service_tier=SERVICE_TIER,
+                      upstream_transport=UPSTREAM_TRANSPORT, responses_lite=RESPONSES_LITE, hedge_after_ms=HEDGE_AFTER_MS,
                       wire_payload_sha256=hashlib.sha256(json.dumps(
                           {**{key: value for key, value in payload.items() if key != 'max_output_tokens'},
                            'model': 'gpt-6-luna'}, allow_nan=False).encode()).hexdigest(),
                       payload_sha256=hashlib.sha256(json.dumps(payload, allow_nan=False).encode()).hexdigest())
     context.remaining()
+    if HEDGE_AFTER_MS and payload["reasoning"]["effort"] == "none":
+        return _hedged(context, payload, qs, HEDGE_AFTER_MS/1000)
     last, attempts, renewed = None, 0, False
     while attempts < 3:
-        context.remaining()
-        context.event('auth_wait', batch=attempt_batch.get())
-        route = prepare_auth(context)  # Authentication/refresh waiting never owns an inference slot.
-        context.event('auth_ready', batch=attempt_batch.get())
-        context.event('queue_wait', batch=attempt_batch.get())
-        acquired = False
-        while not acquired:
-            acquired = _slots.acquire(timeout=min(.05, context.remaining()))
-        context.event('slot_acquired', batch=attempt_batch.get())
-        counted, failure = False, None
+        route = _route(context)
+        _acquire(context)
         attempts += 1
-        physical_id = None
-        auth_generation = getattr(route, "auth_generation", None)
         try:
-            left = context.remaining()
-            physical_id = context.begin_attempt()
-            context.event('attempt_started', batch=attempt_batch.get(), attempt=attempts,
-                          physical_attempt_id=physical_id)
-            with _cache_lock:
-                _stats["upstream_calls"] += 1
-                _stats["active_calls"] += 1
-                counted = True
-            with bind(context, route=route, physical=physical_id):
-                raw, usage = upstream_call(payload, left)
-                if not getattr(usage, "observed_in_context", False):
-                    context.observe(usage, merge_usage)
-        except Reject as error:
-            failure = error
-            usage = getattr(error, "usage", {})
-            if counted and not getattr(error, "accounting_recorded", False):
-                with bind(context, physical=physical_id):
-                    context.observe(usage, merge_usage)
-        finally:
-            if counted:
-                with _cache_lock:
-                    _stats["active_calls"] -= 1
-            _slots.release()
-        context.event('attempt_finished', batch=attempt_batch.get(), attempt=attempts,
-                      physical_attempt_id=physical_id,
-                      code=failure.code if failure else 'completed',
-                      category=getattr(failure, 'category', None), stage=getattr(failure, 'stage', None),
-                      reason=getattr(failure, 'reason', None),
-                      upstream_completed=getattr(failure, 'upstream_completed', False) if failure else True,
-                      accounting=context.snapshot())
-        if failure is not None:
-            if failure.auth_recoverable and auth_generation is not None and not renewed:
-                from . import subscription_auth
+            return _attempt(context, route, payload, qs, attempts, Attempt()), context.snapshot()["observed_usage"]
+        except Reject as failure:
+            if failure.auth_recoverable and getattr(route, "auth_generation", None) is not None and not renewed:
                 renewed = True
-                context.event('auth_refresh_started', batch=attempt_batch.get())
-                try:
-                    subscription_auth.refresh(context.remaining(), expected_generation=auth_generation, context=context)
-                except subscription_auth.NativeAuthStateError as error:
-                    context.remaining()
-                    raise context.attach(Reject(error.status, error.code, str(error))) from None
-                except (ValueError, OSError):
-                    context.remaining()
-                    raise context.attach(Reject(401, "subscription_auth", "Codex login renewal failed")) from None
-                context.event('auth_refresh_completed', batch=attempt_batch.get())
+                _renew(context, route)
                 attempts -= 1
                 continue
-            failure.usage = context.snapshot()["observed_usage"]
             if not failure.retryable:
                 raise context.attach(failure)
             last = failure
-            continue
-        try:
-            context.remaining()
-            if not isinstance(raw, dict) or set(raw) != {f"q{i}" for i in range(len(qs))}:
-                raise ValueError("question ids mismatch")
-            answers = []
-            for i, question in enumerate(qs):
-                value = raw[f"q{i}"]
-                if isinstance(value, dict) and set(value) == {"refused"} and value["refused"] is True:
-                    answers.append({"refused": True})
-                else:
-                    answers.append(typed(question, vector(question, value)))
-            context.event('readout_validation_completed', batch=attempt_batch.get(),
-                          physical_attempt_id=physical_id, attempt=attempts)
-            return answers, context.snapshot()["observed_usage"]
-        except (KeyError, ValueError, TypeError, OverflowError) as error:
-            # A completed but invalid generated readout may be regenerated; an invalid HTTP request may not.
-            context.event('readout_validation_failed', batch=attempt_batch.get(), attempt=attempts,
-                          physical_attempt_id=physical_id, code='invalid_output', reason=_readout_reason(error),
-                          category='model_readout_invalid', stage='full_vector', upstream_completed=True)
-            last = Reject(502, "invalid_output", f"invalid readout: {error}", retryable=True)
-            last.category, last.stage, last.reason = 'model_readout_invalid', 'full_vector', _readout_reason(error)
-            last.upstream_completed = True
-            last.usage = context.snapshot()["observed_usage"]
     raise context.attach(last or Reject(504, "deadline", "request deadline exceeded"))
+
+
+def _route(context):
+    context.remaining()
+    context.event('auth_wait', batch=attempt_batch.get())
+    route = prepare_auth(context)  # Authentication/refresh waiting never owns an inference slot.
+    context.event('auth_ready', batch=attempt_batch.get())
+    return route
+
+
+def _acquire(context):
+    context.event('queue_wait', batch=attempt_batch.get())
+    acquired = False
+    while not acquired:
+        acquired = _slots.acquire(timeout=min(.05, context.remaining()))
+    context.event('slot_acquired', batch=attempt_batch.get())
+
+
+def _renew(context, route):
+    from . import subscription_auth
+    context.event('auth_refresh_started', batch=attempt_batch.get())
+    try:
+        subscription_auth.refresh(context.remaining(), expected_generation=route.auth_generation, context=context)
+    except subscription_auth.NativeAuthStateError as error:
+        context.remaining()
+        raise context.attach(Reject(error.status, error.code, str(error))) from None
+    except (ValueError, OSError):
+        context.remaining()
+        raise context.attach(Reject(401, "subscription_auth", "Codex login renewal failed")) from None
+    context.event('auth_refresh_completed', batch=attempt_batch.get())
+
+
+def _attempt(context, route, payload, qs, attempt, scope):
+    """One physical attempt on an acquired inference slot (released here). Usage is entered exactly once
+    (observed, or unknown when the attempt ends without terminal usage) and only a fully validated
+    readout leaves; failures carry the observed request usage."""
+    counted, failure, physical_id = False, None, None
+    try:
+        left = context.remaining()
+        physical_id = context.begin_attempt()
+        context.event('attempt_started', batch=attempt_batch.get(), attempt=attempt,
+                      physical_attempt_id=physical_id)
+        with _cache_lock:
+            _stats["upstream_calls"] += 1
+            _stats["active_calls"] += 1
+            counted = True
+        with bind(context, route=route, physical=physical_id, scope=scope):
+            raw, usage = upstream_call(payload, left)
+            if not getattr(usage, "observed_in_context", False) and scope.claim():
+                context.observe(usage, merge_usage)
+    except Reject as error:
+        failure = error
+        usage = getattr(error, "usage", {})
+        if counted and not getattr(error, "accounting_recorded", False) and scope.claim():
+            with bind(context, physical=physical_id):
+                context.observe(usage, merge_usage)
+    finally:
+        if counted:
+            with _cache_lock:
+                _stats["active_calls"] -= 1
+        _slots.release()
+    context.event('attempt_finished', batch=attempt_batch.get(), attempt=attempt,
+                  physical_attempt_id=physical_id,
+                  code=failure.code if failure else 'completed',
+                  category=getattr(failure, 'category', None), stage=getattr(failure, 'stage', None),
+                  reason=getattr(failure, 'reason', None),
+                  upstream_completed=getattr(failure, 'upstream_completed', False) if failure else True,
+                  accounting=context.snapshot())
+    if failure is not None:
+        failure.usage = context.snapshot()["observed_usage"]
+        raise failure
+    try:
+        context.remaining()
+        if not isinstance(raw, dict) or set(raw) != {f"q{i}" for i in range(len(qs))}:
+            raise ValueError("question ids mismatch")
+        answers = []
+        for i, question in enumerate(qs):
+            value = raw[f"q{i}"]
+            if isinstance(value, dict) and set(value) == {"refused"} and value["refused"] is True:
+                answers.append({"refused": True})
+            else:
+                answers.append(typed(question, vector(question, value)))
+        context.event('readout_validation_completed', batch=attempt_batch.get(),
+                      physical_attempt_id=physical_id, attempt=attempt)
+        return answers
+    except (KeyError, ValueError, TypeError, OverflowError) as error:
+        # A completed but invalid generated readout may be regenerated; an invalid HTTP request may not.
+        context.event('readout_validation_failed', batch=attempt_batch.get(), attempt=attempt,
+                      physical_attempt_id=physical_id, code='invalid_output', reason=_readout_reason(error),
+                      category='model_readout_invalid', stage='full_vector', upstream_completed=True)
+        last = Reject(502, "invalid_output", f"invalid readout: {error}", retryable=True)
+        last.category, last.stage, last.reason = 'model_readout_invalid', 'full_vector', _readout_reason(error)
+        last.upstream_completed = True
+        last.usage = context.snapshot()["observed_usage"]
+        raise last from None
+
+
+def _hedged(context, payload, qs, after):
+    """At most two physical attempts for this decision. The second is either the hedge (the first attempt
+    has streamed no output text `after` seconds past its send, and a slot and connection are free) or the
+    single retry after a retryable failure or login renewal, whichever comes first; the ordinary three-attempt
+    retry does not apply. The first fully validated outcome, a refusal included, is returned and the other
+    attempt is cancelled in its own scope. A failure while the other attempt runs waits for it; when both
+    fail, a non-retryable failure is reported before a retryable one."""
+    done, live, launched, failures = queue.SimpleQueue(), {}, {}, []
+    attempts, hedge_due, renewed, route = 0, None, False, None
+    started = time.monotonic()
+
+    def launch(role, number):
+        """Runs the attempt on the slot the caller acquired; _attempt releases it."""
+        scope = Attempt()
+        def work():
+            try:
+                outcome = _attempt(context, route, payload, qs, number, scope)
+            except Exception as error:
+                outcome = error
+            done.put((scope, outcome))
+        try:
+            threading.Thread(target=contextvars.copy_context().run, args=(work,), daemon=True,
+                             name="jev-luna-attempt").start()
+        except BaseException:
+            _slots.release()
+            raise
+        live[scope] = launched[scope] = role
+        return scope
+
+    def timings(scope):
+        mark = lambda value: None if value is None else round(1000*(value-started), 1)
+        return {"sent_ms": mark(scope.sent_at), "first_output": scope.output.is_set()}
+
+    def report(winner):
+        context.event('hedge_resolved', batch=attempt_batch.get(), winner=winner, attempts=attempts,
+                      timings={role: timings(scope) for scope, role in launched.items()},
+                      codes={role: failure.code for role, failure in failures})
+
+    try:
+        while True:
+            if not live:
+                failure = failures[-1][1] if failures else None
+                retry = failure is not None and attempts < 2 and (failure.retryable or failure.auth_recoverable
+                        and getattr(route, "auth_generation", None) is not None and not renewed)
+                if failure is not None and not retry:
+                    final = next((f for _, f in failures if not f.retryable), failure)
+                    report(None)
+                    raise context.attach(final)
+                if failure is not None and failure.auth_recoverable and not failure.retryable:
+                    renewed = True
+                    _renew(context, route)
+                route = _route(context)
+                _acquire(context)
+                attempts += 1
+                primary = launch("primary" if attempts == 1 else "retry", attempts)
+                if attempts == 1:
+                    hedge_due = primary
+            wait = .05
+            if hedge_due is not None and hedge_due.sent_at is not None:
+                wait = max(0, min(wait, hedge_due.sent_at+after-time.monotonic()))
+            try:
+                scope, outcome = done.get(timeout=min(wait, context.remaining()))
+            except queue.Empty:
+                context.remaining()
+                if (hedge_due is None or hedge_due.sent_at is None or time.monotonic() < hedge_due.sent_at+after
+                        or not done.empty()):  # an outcome that just arrived is handled before any hedge
+                    continue
+                first, hedge_due = hedge_due, None
+                if first.output.is_set() or first not in live:
+                    continue
+                if not _slots.acquire(blocking=False):
+                    context.event('hedge_skipped', batch=attempt_batch.get(), reason='inference_slots')
+                    continue
+                try:
+                    from .transport import client
+                    spare = client().spare(route)
+                except BaseException:
+                    _slots.release()
+                    raise
+                if not spare:
+                    _slots.release()
+                    context.event('hedge_skipped', batch=attempt_batch.get(), reason='connection_pool')
+                    continue
+                attempts += 1
+                with _cache_lock: _stats["hedges"] += 1
+                context.event('hedge_fired', batch=attempt_batch.get(), after_ms=round(1000*after), primary=timings(first))
+                launch("hedge", attempts)
+                continue
+            role = live.pop(scope)
+            if scope is hedge_due:
+                hedge_due = None
+            if isinstance(outcome, Reject):
+                failures.append((role, outcome))
+                continue
+            if isinstance(outcome, Exception):
+                raise outcome
+            for other in live:
+                other.cancel()
+            report(role)
+            return outcome, context.snapshot()["observed_usage"]
+    finally:
+        for scope in live:
+            scope.cancel()
 
 
 def _infer(state, qs, deadline, context=None):
@@ -842,10 +993,11 @@ class H(BaseHTTPRequestHandler):
             if health:
                 with _cache_lock: stats = {**_stats, "cache_entries": len(_cache), "inflight": _stats["active_calls"]}
                 return self._send(200, {"ok": True, "source_sha256": SOURCE_SHA256, "build_sha256": BUILD_SHA256, "transport": TRANSPORT, "model": MODEL,
-                    "beta": BETA, "backend": "luna-json-readout", "upstream_protocol": "responses-sse", "reasoning_effort": "adaptive" if REASONING_EFFORT == "auto" else REASONING_EFFORT,
+                    "beta": BETA, "backend": "luna-json-readout", "reasoning_effort": "adaptive" if REASONING_EFFORT == "auto" else REASONING_EFFORT,
                     "reasoning_policy": {"short_input": "none", "long_vector_input": "medium", "predicate_only": "none", "short_input_bytes": SHORT_INPUT_BYTES,
                                          "override": REASONING_EFFORT},
-                    "readout_profile": READOUT_PROFILE, "service_tier": SERVICE_TIER, "probability_encoding": "complete-weights" if READOUT_PROFILE in ("baseline", "compact-weight-v1", "blocked-weight-v1", "keyed-weight-v1") else "complete-probability-estimates", "score_representation": "score-fields-v2", "native_decisions": False, "deadline_seconds": DEADLINE,
+                    "readout_profile": READOUT_PROFILE, "service_tier": SERVICE_TIER,
+                    **_protocols(), "hedge_after_ms": HEDGE_AFTER_MS, "probability_encoding": "complete-weights" if READOUT_PROFILE in ("baseline", "compact-weight-v1", "blocked-weight-v1", "keyed-weight-v1") else "complete-probability-estimates", "score_representation": "score-fields-v2", "native_decisions": False, "deadline_seconds": DEADLINE,
                     "cache_ttl_seconds": CACHE_TTL, "stats": stats, "local_auth_required": bool(getattr(self.server, "local_key", None))})
             if self.path.split("?")[0].rstrip("/") == "/v1/models":
                 model = MODEL.split("/")[-1]

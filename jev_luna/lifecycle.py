@@ -13,6 +13,50 @@ current_context = contextvars.ContextVar("jev_luna_request", default=None)
 attempt_route = contextvars.ContextVar("jev_luna_attempt_route", default=None)
 attempt_batch = contextvars.ContextVar("jev_luna_attempt_batch", default=None)
 physical_attempt = contextvars.ContextVar("jev_luna_physical_attempt", default=None)
+attempt_scope = contextvars.ContextVar("jev_luna_attempt_scope", default=None)
+
+
+class Attempt:
+    """One physical attempt's own cancellation scope, send/first-output marks and usage claim.
+
+    Cancelling it never cancels the request; the request's cancellation still reaches it through
+    RequestContext callbacks.
+    """
+    def __init__(self):
+        self.lock = threading.Lock()
+        self.callbacks = set()
+        self.cancelled = False
+        self.claimed = False
+        self.sent_at = None
+        self.output = threading.Event()
+
+    def register(self, callback):
+        with self.lock:
+            if not self.cancelled:
+                self.callbacks.add(callback)
+                return lambda: self.callbacks.discard(callback)
+        callback()
+        raise Reject(499, "cancelled", "Attempt cancelled")
+
+    def cancel(self):
+        with self.lock:
+            self.cancelled = True
+            callbacks = list(self.callbacks)
+        for callback in callbacks:
+            try:
+                callback()
+            except Exception:
+                pass
+
+    def mark_sent(self):
+        if self.sent_at is None:
+            self.sent_at = time.monotonic()
+
+    def claim(self):
+        """True exactly once: the attempt's usage, observed or unknown, is entered by one owner."""
+        with self.lock:
+            claimed, self.claimed = self.claimed, True
+            return not claimed
 
 
 class RequestContext:
@@ -142,14 +186,16 @@ class RequestContext:
 
 
 @contextlib.contextmanager
-def bind(context, *, route=None, batch=None, physical=None):
+def bind(context, *, route=None, batch=None, physical=None, scope=None):
     token = current_context.set(context)
     route_token = attempt_route.set(route)
     batch_token = attempt_batch.set(batch) if batch is not None else None
     physical_token = physical_attempt.set(physical) if physical is not None else None
+    scope_token = attempt_scope.set(scope) if scope is not None else None
     try:
         yield
     finally:
+        if scope_token is not None: attempt_scope.reset(scope_token)
         attempt_route.reset(route_token)
         if batch_token is not None: attempt_batch.reset(batch_token)
         if physical_token is not None: physical_attempt.reset(physical_token)

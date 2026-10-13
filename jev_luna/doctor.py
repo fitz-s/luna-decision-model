@@ -61,7 +61,8 @@ def server_health(url, *, timeout=3):
             raise ValueError('Invalid target health response')
         return {'reachable': True, 'liveness': True, 'native_inference_verified': False,
                 **{key: health.get(key) for key in ('build_sha256', 'readout_profile', 'service_tier', 'transport', 'model',
-                    'reasoning_policy', 'deadline_seconds', 'local_auth_required')}}
+                    'reasoning_policy', 'deadline_seconds', 'local_auth_required', 'upstream_transport', 'responses_lite',
+                    'hedge_after_ms')}}
     finally:
         if watchdog is not None: watchdog.cancel()
         if response is not None: response.close()
@@ -72,6 +73,8 @@ def check(*, live=False, url=None):
     from . import core
     result = {'version': __version__, 'build_sha256': identity(), 'python': platform.python_version(),
               'platform': platform.system(), 'transport': core.TRANSPORT, 'model': 'gpt-6-luna',
+              'upstream_transport': core.UPSTREAM_TRANSPORT, 'responses_lite': core.RESPONSES_LITE,
+              'hedge_after_ms': core.HEDGE_AFTER_MS,
               'live_checked': live, 'quality_qualified': False, 'native_speed_parity': False,
               'new_registration': False, 'ok': False}
     result['client_build_sha256'] = result['build_sha256']
