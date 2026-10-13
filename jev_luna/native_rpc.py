@@ -15,6 +15,7 @@ import json
 import os
 from pathlib import Path
 import queue
+import re
 import shutil
 import subprocess
 import tempfile
@@ -28,6 +29,40 @@ MAX_LINE = 1_048_576
 MAX_NOTICES = 64
 ALLOWED_RPC = frozenset({"initialize", "getAuthStatus", "account/read"})
 ORIGIN = "https://chatgpt.com"
+STDERR_TAIL = 8192  # bytes of the child's stderr kept in memory; never logged
+ERROR_TAIL = 400    # characters of the redacted tail appended to channel/protocol errors
+TAIL_CODES = frozenset({"native_auth_channel", "native_auth_protocol"})
+last_timings: dict = {}  # ms of the latest Session spawn/initialize and credential RPCs; diagnostics and tests only
+
+_SECRETS = [re.compile(p, re.I) for p in (
+    r"eyJ[\w-]{5,}\.[\w-]{5,}(?:\.[\w-]*)?",  # JWT
+    r"bearer\s+\S+",
+    r"\b(?:authorization|auth[_-]?token|access[_-]?token|refresh[_-]?token|id[_-]?token|api[_-]?key|secret|password|cookie)\b[\"']?\s*[:=]\s*\S+",
+    r"\b(?:sk|rt|pk)-[\w-]{8,}",
+    r"[A-Za-z0-9_+/=-]{32,}",  # any long opaque run
+)]
+
+
+def redact(text: str) -> str:
+    """Strip anything resembling a token, JWT or Bearer value, and control characters."""
+    for pattern in _SECRETS:
+        text = pattern.sub("<redacted>", text)
+    return re.sub(r"[^\n\t -~]", "?", text).strip()
+
+
+class _Tail:
+    """Last STDERR_TAIL bytes of a child's stderr."""
+    def __init__(self):
+        self.lock = threading.Lock()
+        self.data = b""
+
+    def add(self, chunk: bytes):
+        with self.lock:
+            self.data = (self.data + chunk)[-STDERR_TAIL:]
+
+    def text(self) -> str:
+        with self.lock:
+            return self.data.decode("utf-8", "replace")
 
 
 class NativeRpcError(ValueError):
@@ -72,6 +107,10 @@ def validate_pair(status: dict, account: dict) -> Credential:
     return Credential(token, account_id, ORIGIN, override)
 
 
+def _ms(began):
+    return round((time.perf_counter()-began)*1000, 1)
+
+
 def codex_executable() -> str | None:
     """The resolved codex binary a Session launches, or None when none is configured or on PATH."""
     executable = os.environ.get("LDM_CODEX_BIN") or shutil.which("codex")
@@ -79,6 +118,8 @@ def codex_executable() -> str | None:
 
 
 class Session:
+    stderr = drain = None
+
     def __init__(self, deadline: float):
         executable = codex_executable()
         if not executable:
@@ -90,14 +131,19 @@ class Session:
         for name in ("OPENAI_API_KEY", "CODEX_API_KEY", "CODEX_ACCESS_TOKEN", "CODEX_AUTH_JWT", "OPENAI_BASE_URL", "OPENAI_API_BASE"):
             env.pop(name, None)
         # Process-local provider selection only; never changes config.toml or the store mode.
+        spawn_began = time.perf_counter()
         command = [executable, "-c", 'model_provider="openai"', "app-server"]
         try:
             self.proc = subprocess.Popen(command, stdin=subprocess.PIPE, stdout=subprocess.PIPE,
-                                         stderr=subprocess.DEVNULL, cwd=self.neutral.name, env=env)
+                                         stderr=subprocess.PIPE, cwd=self.neutral.name, env=env)
         except OSError:
             self.neutral.cleanup()
             raise NativeRpcError("codex_start", "Could not start the native Codex auth process", 422) from None
         self.deadline = deadline
+        self.timings = {}
+        self.stderr = _Tail()
+        self.drain = threading.Thread(target=self._drain, name="ldm-auth-stderr", daemon=True)
+        self.drain.start()
         try:
             # Use raw nonblocking writes, never buffered writes that can outlive the watchdog.
             os.set_blocking(self.proc.stdin.fileno(), False)
@@ -125,6 +171,8 @@ class Session:
         self.closed = False
         self.reader = threading.Thread(target=self._pump, name="ldm-auth-read", daemon=True)
         self.reader.start()
+        self.timings["spawn"] = _ms(spawn_began)
+        init_began = time.perf_counter()
         try:
             self.rpc("initialize", {"clientInfo": {"name": "luna-decision-model", "version": __version__},
                                     "capabilities": {"experimentalApi": True}}, deadline)
@@ -132,6 +180,31 @@ class Session:
         except BaseException:
             self.close()
             raise
+        finally:
+            self.timings["initialize"] = _ms(init_began)
+        last_timings.clear()
+        last_timings.update(self.timings)
+
+    def _drain(self):
+        # Keep the pipe from filling; the child may print at any time.
+        try:
+            while True:
+                chunk = self.proc.stderr.read1(4096)
+                if not isinstance(chunk, (bytes, bytearray)) or not chunk:
+                    return
+                self.stderr.add(bytes(chunk))
+        except (OSError, ValueError, AttributeError):
+            return
+
+    def _fail(self, code, message, status=401):
+        """NativeRpcError; channel and protocol faults carry the redacted tail of the child's stderr."""
+        if code in TAIL_CODES:
+            if self.drain is not None and self.proc.poll() is not None:
+                self.drain.join(.05)
+            tail = redact(self.stderr.text())[-ERROR_TAIL:] if self.stderr else ""
+            if tail:
+                message = f"{message}; codex stderr tail: {tail}"
+        return NativeRpcError(code, message, status)
 
     def _pump(self):
         try:
@@ -159,11 +232,11 @@ class Session:
             if left <= 0:
                 raise NativeRpcError("native_auth_deadline", "Native credential lookup exceeded its budget", 504)
             if self.proc.poll() is not None:
-                raise NativeRpcError("native_auth_channel", "Native credential channel ended", 502)
+                raise self._fail("native_auth_channel", "Native credential channel ended", 502)
             try:
                 written = os.write(self.proc.stdin.fileno(), remaining)
                 if written <= 0:
-                    raise NativeRpcError("native_auth_channel", "Native credential channel ended", 502)
+                    raise self._fail("native_auth_channel", "Native credential channel ended", 502)
                 remaining = remaining[written:]
             except BlockingIOError:
                 time.sleep(min(.01, left))
@@ -175,6 +248,7 @@ class Session:
             raise NativeRpcError("native_auth_deadline", "Native credential lookup exceeded its budget", 504)
         self.sequence += 1
         seq = self.sequence
+        began = time.perf_counter()
         watchdog = threading.Timer(max(0, deadline-time.monotonic()), self._terminate)
         watchdog.daemon = True
         watchdog.start()
@@ -185,13 +259,13 @@ class Session:
                 if left <= 0:
                     raise NativeRpcError("native_auth_deadline", "Native credential lookup exceeded its budget", 504)
                 if self.broken.is_set():
-                    raise NativeRpcError("native_auth_channel", "Native credential channel ended", 502)
+                    raise self._fail("native_auth_channel", "Native credential channel ended", 502)
                 try:
                     message = loads(self.inbox.get(timeout=min(left, .05)))
                 except queue.Empty:
                     continue
                 if not isinstance(message, dict):
-                    raise NativeRpcError("native_auth_protocol", "Invalid native credential response", 502)
+                    raise self._fail("native_auth_protocol", "Invalid native credential response", 502)
                 if message.get("method") == "account/updated":
                     self.account_epoch += 1
                 if "method" in message and "id" in message:
@@ -217,20 +291,31 @@ class Session:
                     raise NativeRpcError("native_auth_rpc", "Native credential RPC was rejected; inspect Codex locally", 422)
                 result = message.get("result")
                 if not isinstance(result, dict):
-                    raise NativeRpcError("native_auth_protocol", "Native credential RPC omitted a result", 502)
+                    raise self._fail("native_auth_protocol", "Native credential RPC omitted a result", 502)
                 if self.broken.is_set():
-                    raise NativeRpcError("native_auth_channel", "Native credential channel ended or lost messages", 502)
+                    raise self._fail("native_auth_channel", "Native credential channel ended or lost messages", 502)
                 return result
         except (OSError, ValueError) as error:
             if isinstance(error, NativeRpcError):
                 raise
-            raise NativeRpcError("native_auth_protocol", "Native credential channel failed", 502) from None
+            raise self._fail("native_auth_protocol", "Native credential channel failed", 502) from None
         finally:
             watchdog.cancel()
+            timings = self.__dict__.setdefault("timings", {})  # tests build bare Sessions without __init__
+            timings[method] = round(timings.get(method, 0)+_ms(began), 1)
 
     def credential(self, deadline, *, force_refresh=False, expected_account=None,
                    expected_generation=None):
         # A guarded native read, not an atomic token+account transaction.
+        try:
+            return self._credential(deadline, force_refresh, expected_account, expected_generation)
+        finally:
+            last_timings.clear()
+            last_timings.update(self.__dict__.get("timings", {}))
+
+    def _credential(self, deadline, force_refresh, expected_account, expected_generation):
+        for method in ("getAuthStatus", "account/read"):
+            self.__dict__.setdefault("timings", {}).pop(method, None)
         metadata = self.rpc("getAuthStatus", {"includeToken": False, "refreshToken": False}, deadline)
         if metadata.get("requiresOpenaiAuth") is not True:
             raise NativeRpcError("native_provider_profile", "Native provider does not expose OpenAI auth", 422)
@@ -281,7 +366,7 @@ class Session:
                 if (epoch == self.account_epoch and first.backend_origin == second.backend_origin
                         and hmac.compare_digest(first.access_token, second.access_token)):
                     if self.broken.is_set():
-                        raise NativeRpcError("native_auth_channel", "Native credential channel lost messages", 502)
+                        raise self._fail("native_auth_channel", "Native credential channel lost messages", 502)
                     return second
             raise NativeRpcError("native_account_changed", "Native credentials did not stabilize; start a new request", 409)
 
@@ -320,7 +405,7 @@ class Session:
             pass
         finally:
             if self.proc.poll() is not None:
-                for stream in (self.proc.stdin, self.proc.stdout):
+                for stream in (self.proc.stdin, self.proc.stdout, self.proc.stderr):
                     try:
                         stream.close()
                     except (OSError, ValueError):

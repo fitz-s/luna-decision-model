@@ -1,6 +1,7 @@
 """Reuse native Codex ChatGPT OAuth in memory; never persist a credential copy."""
 import atexit
 import http.client
+import logging
 import os
 from pathlib import Path
 import re
@@ -15,6 +16,7 @@ try:
 except ImportError:  # Python 3.10
     tomllib=None
 
+log = logging.getLogger(__name__)
 HOST = "chatgpt.com"
 PATH = "/backend-api/codex/responses"
 
@@ -79,6 +81,8 @@ def connection(timeout, *, context=None):
 
 
 SESSION_MAX_AGE=300  # seconds; bounds how long one native process serves lookups
+SUCCESSOR_MARGIN=60  # seconds before SESSION_MAX_AGE at which the next process is prepared in the background
+SUCCESSOR_BUDGET=30  # seconds a background spawn+initialize may take
 REUSE_RETRY=frozenset({"native_auth_channel", "native_auth_protocol"})  # EOF, broken pipe, exit, garbled frame
 STORE_REBUILDS=2  # fresh reads discarded because the store changed underneath, before failing closed
 MAX_CONFIG=1_048_576
@@ -90,11 +94,84 @@ _session_lock=threading.Lock()
 _session=None
 
 
+# Background successor: prepared without _session_lock, adopted by a lookup only under it.
+# 'busy' bounds the work in flight to one; 'epoch' orphans a spawn that _drop_session outran.
+_succ_lock=threading.Lock()
+_succ={'busy':False,'ready':None,'epoch':0}  # ready: (initialized Session, store state it was created under)
+
+
 def _drop_session():
     global _session
+    with _succ_lock:
+        _succ['epoch']+=1
+        ready,_succ['ready']=_succ['ready'],None
+    if ready is not None:ready[0].close()
     with _session_lock:
         old,_session=_session,None
     if old is not None:old.close()
+
+
+def _close_async(session):
+    threading.Thread(target=session.close, name="ldm-auth-close", daemon=True).start()
+
+
+def _discard_successor():
+    with _succ_lock:
+        ready,_succ['ready']=_succ['ready'],None
+    if ready is not None:_close_async(ready[0])
+
+
+def _successor_ok(session, state):
+    return not (session.closed or session.broken.is_set() or session.proc.poll() is not None
+                or time.monotonic()-session.started>SESSION_MAX_AGE)
+
+
+def _take_successor(state):
+    """The ready successor if it was made under the current store state and is still alive, else none."""
+    with _succ_lock:
+        ready,_succ['ready']=_succ['ready'],None
+    if ready is None:return None
+    session,made=ready
+    if state is not None and made==state and _successor_ok(session, state):
+        return session
+    _close_async(session)
+    return None
+
+
+def _prepare_successor(state, epoch):
+    from .native_rpc import Session
+    session=None
+    try:
+        session=Session(time.monotonic()+SUCCESSOR_BUDGET)
+    except Exception as error:
+        log.warning("successor codex app-server failed: %s", getattr(error, 'code', type(error).__name__))
+    stale=session
+    with _succ_lock:
+        _succ['busy']=False
+        if session is not None and epoch==_succ['epoch'] and _succ['ready'] is None:
+            _succ['ready']=(session, state)
+            stale=None
+    if stale is not None:stale.close()
+
+
+def _prepare_if_due(session, state):
+    """Start at most one background successor once the live session is within SUCCESSOR_MARGIN of its age limit."""
+    if state is None or time.monotonic()-session.started<=SESSION_MAX_AGE-SUCCESSOR_MARGIN:
+        return
+    with _succ_lock:
+        ready=_succ['ready']
+        if ready is not None and ready[1]==state and _successor_ok(ready[0], state):
+            return
+        if ready is not None:
+            _succ['ready']=None
+            _close_async(ready[0])
+        if _succ['busy']:
+            return
+        _succ['busy'], epoch = True, _succ['epoch']
+    try:
+        threading.Thread(target=_prepare_successor, args=(state, epoch), name="ldm-auth-successor", daemon=True).start()
+    except RuntimeError:
+        with _succ_lock:_succ['busy']=False
 
 
 def _retire(session, deadline):
@@ -197,10 +274,13 @@ def _store_state():
     return tuple(state)
 
 
-def _reusable(session, state):
+def _healthy(session, state):
     return not (session.closed or session.broken.is_set() or session.proc.poll() is not None
-                or not session.inbox.empty() or state is None or session.store_state != state
-                or time.monotonic()-session.started>SESSION_MAX_AGE)
+                or not session.inbox.empty() or state is None or session.store_state != state)
+
+
+def _reusable(session, state):
+    return _healthy(session, state) and time.monotonic()-session.started<=SESSION_MAX_AGE
 
 
 def _shared_credential(deadline):
@@ -220,6 +300,13 @@ def _shared_credential(deadline):
     rotation for the same owner is absorbed while an owner or routing switch is a 409.
     Only a channel failure of a reused process (REUSE_RETRY) is retried, once; every other
     error, including 409 account/policy changes, propagates.
+
+    Age alone never costs a spawn under the lock: within SUCCESSOR_MARGIN of the limit a
+    daemon thread initializes the next process (no lock held), and a lookup that finds the
+    live one aged out adopts it, provided the store state it was created under still equals
+    the current one. Any other retirement (fault, store change, refresh, idle message)
+    discards the successor and spawns synchronously as before. The successor serves nothing
+    until adopted, so lookups never run on two processes at once.
     """
     global _session
     from .native_rpc import Session, NativeRpcError
@@ -233,12 +320,21 @@ def _shared_credential(deadline):
         while True:
             state=_store_state()
             session,_session=_session,None  # republished only after a fenced success
+            successor=None
             if session is not None and not _reusable(session, state):
-                _retire(session, deadline)
+                if _healthy(session, state):
+                    successor=_take_successor(state)  # aged out and nothing else wrong
+                else:
+                    _discard_successor()
+                # A successor is already serving-ready: do not make the lookup wait for the old close.
+                _retire(session, min(deadline, time.monotonic()+.05) if successor else deadline)
+                old_binding=session.binding
                 session=None
             reused=session is not None
             if reused:
                 binding=session.binding
+            elif successor is not None:
+                session,binding=successor,old_binding
             else:
                 if time.monotonic()>=deadline:
                     raise expired()
@@ -271,6 +367,7 @@ def _shared_credential(deadline):
             session.binding=(value.account_id, value.routing_override)
             if state is not None:
                 session.store_state, _session = state, session
+                _prepare_if_due(session, state)
             else:
                 _retire(session, deadline)
             return value

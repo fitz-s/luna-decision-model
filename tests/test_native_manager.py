@@ -68,6 +68,11 @@ class NativeManager(unittest.TestCase):
         self.assertEqual(generation[0],'native');self.assertNotIn(access,generation)
         self.assertEqual(self.sent[2]['params']['includeToken'],False)
 
+    def test_sub_timings_are_recorded_for_spawn_initialize_and_each_rpc(self):
+        self.invoke(self.results())
+        self.assertEqual(set(native.last_timings),{'spawn','initialize','getAuthStatus','account/read'})
+        self.assertTrue(all(isinstance(v,float) and v>=0 for v in native.last_timings.values()))
+
     def test_missing_login_and_api_key_mode_fail_before_exporting_token(self):
         with self.assertRaises(auth.NativeAuthStateError) as absent:self.invoke([{}, {'authMethod':None,'requiresOpenaiAuth':True},ACCOUNT])
         self.assertEqual(absent.exception.code,'native_login_unavailable')
@@ -499,3 +504,165 @@ class NativeStoreState(unittest.TestCase):
                 auth._native_login(1);self.assertEqual(len(spawned),4);self.assertTrue(spawned[2].closed)
         finally:
             auth._drop_session()
+
+
+class BackgroundSuccessor(unittest.TestCase):
+    """The next app-server is prepared off the lock; an age-only retirement adopts it without a spawn wait."""
+    def setUp(self):
+        auth._drop_session()
+        self.spawned=[];self.state=('exe','home',(1,10,100),None);self.owner='native-workspace'
+        self.delay=0;self.fail_spawn=0;self.lock=threading.Lock();self.served=[]
+        test=self
+        class Fake:
+            def __init__(self,deadline):
+                with test.lock:test.spawned.append(self);self.index=len(test.spawned)
+                self.closed=False;self.broken=threading.Event();self.proc=MagicMock();self.proc.poll.return_value=None
+                self.inbox=queue.Queue();self.calls=0;self.kwargs=[]
+                if test.index_delay(self.index):time.sleep(test.delay)
+                if test.fail_spawn:
+                    test.fail_spawn-=1
+                    raise native.NativeRpcError('codex_start','Could not start the native Codex auth process',422)
+                self.started=time.monotonic()
+            def credential(self,deadline,**kwargs):
+                self.calls+=1;self.kwargs.append(kwargs);test.served.append(self.index)
+                return native.Credential(token(),test.owner,'https://chatgpt.com')
+            def close(self):self.closed=True
+        self.patches=[patch.object(native,'Session',Fake),patch.object(auth,'_store_state',lambda:self.state)]
+        for p in self.patches:p.start()
+    def tearDown(self):
+        auth._drop_session()
+        for p in self.patches:p.stop()
+
+    def index_delay(self,index):return index>1  # only background spawns are slow; the first is the cold lookup
+
+    def age(self,session,seconds):session.started-=seconds
+    def near_limit(self,session):self.age(session,auth.SESSION_MAX_AGE-auth.SUCCESSOR_MARGIN+1)
+    def wait(self,predicate,limit=3):
+        end=time.monotonic()+limit
+        while not predicate():
+            self.assertLess(time.monotonic(),end);time.sleep(.005)
+    def timed(self):
+        began=time.monotonic();auth._native_login(1);return time.monotonic()-began
+
+    def test_successor_is_adopted_with_no_lookup_blocking_on_spawn(self):
+        self.delay=.4
+        auth._native_login(1);old=self.spawned[0]
+        self.near_limit(old)
+        slow=[self.timed() for _ in range(3)]  # the spawn is in flight; lookups keep using the live process
+        self.assertTrue(all(t<.15 for t in slow),slow)
+        self.assertEqual(len(self.spawned),2,'at most one successor in flight');self.assertEqual(old.calls,4)
+        self.wait(lambda:auth._succ['ready'] is not None)
+        self.age(old,auth.SUCCESSOR_MARGIN)  # now aged out for age alone
+        self.assertLess(self.timed(),.15)
+        new=self.spawned[1]
+        self.assertEqual(len(self.spawned),2);self.assertIs(auth._session,new);self.assertEqual(new.calls,1)
+        self.assertEqual(new.kwargs[0]['expected_account'],'native-workspace','the old binding carries over')
+        self.wait(lambda:old.closed);self.assertEqual(old.calls,4,'the old process never serves after adoption')
+        self.assertFalse(new.closed);auth._native_login(1);self.assertEqual((len(self.spawned),new.calls),(2,2))
+        self.assertEqual(self.served,[1,1,1,1,2,2])  # lookups never interleave two processes
+
+    def test_successor_is_discarded_when_the_store_changed(self):
+        auth._native_login(1);old=self.spawned[0];self.near_limit(old)
+        auth._native_login(1);self.wait(lambda:auth._succ['ready'] is not None)
+        successor=self.spawned[1];self.age(old,auth.SUCCESSOR_MARGIN)
+        self.state=('exe','home',(1,11,100),None)
+        auth._native_login(1)
+        self.assertEqual(len(self.spawned),3);self.assertIs(auth._session,self.spawned[2])
+        self.wait(lambda:successor.closed and old.closed);self.assertEqual(successor.calls,0)
+        self.assertIsNone(auth._succ['ready'])
+
+    def test_successor_made_under_another_store_state_is_never_adopted(self):
+        auth._native_login(1);old=self.spawned[0];self.age(old,auth.SESSION_MAX_AGE+1)  # aged for age alone
+        stray=native.Session(time.monotonic()+1)
+        with auth._succ_lock:auth._succ['ready']=(stray,('exe','home',(9,9,9),None))
+        auth._native_login(1)
+        self.assertNotIn(stray.index,self.served);self.wait(lambda:stray.closed and old.closed)
+        self.assertIsNot(auth._session,stray);self.assertEqual(len(self.spawned),3)
+
+    def test_fault_retires_immediately_and_drops_the_successor(self):
+        auth._native_login(1);old=self.spawned[0];self.near_limit(old)
+        auth._native_login(1);self.wait(lambda:auth._succ['ready'] is not None)
+        successor=self.spawned[1];old.broken.set()
+        auth._native_login(1)
+        self.assertEqual(len(self.spawned),3);self.assertIsNot(auth._session,successor)
+        self.wait(lambda:successor.closed and old.closed)
+
+    def test_idle_message_or_refresh_retires_immediately(self):
+        auth._native_login(1);old=self.spawned[0];self.near_limit(old)
+        auth._native_login(1);self.wait(lambda:auth._succ['ready'] is not None)
+        successor=self.spawned[1];old.inbox.put(b'{}\n')
+        auth._native_login(1)
+        self.assertEqual(len(self.spawned),3);self.wait(lambda:successor.closed)
+        auth._native_login(1)
+        self.near_limit(auth._session);auth._native_login(1)
+        self.wait(lambda:auth._succ['ready'] is not None);ready=auth._succ['ready'][0]
+        auth._native_login(1,refresh=True)
+        self.assertTrue(ready.closed);self.assertIsNone(auth._succ['ready']);self.assertIsNone(auth._session)
+
+    def test_successor_failure_is_logged_and_the_lookup_falls_back_to_a_synchronous_spawn(self):
+        auth._native_login(1);old=self.spawned[0];self.near_limit(old)
+        self.fail_spawn=1
+        with self.assertLogs(auth.log,'WARNING') as logs:
+            auth._native_login(1);self.wait(lambda:not auth._succ['busy'])
+        self.assertIn('codex_start',logs.output[0]);self.assertNotIn('native-workspace',logs.output[0])
+        self.assertIsNone(auth._succ['ready']);self.age(old,auth.SUCCESSOR_MARGIN)
+        self.assertEqual(auth._native_login(1)[1],'native-workspace')
+        self.assertEqual(len(self.spawned),3);self.assertIs(auth._session,self.spawned[2]);self.wait(lambda:old.closed)
+
+    def test_stale_ready_successor_is_not_adopted(self):
+        auth._native_login(1);old=self.spawned[0];self.near_limit(old)
+        auth._native_login(1);self.wait(lambda:auth._succ['ready'] is not None)
+        successor=self.spawned[1];self.age(old,auth.SUCCESSOR_MARGIN);self.age(successor,auth.SESSION_MAX_AGE+1)
+        auth._native_login(1)
+        self.assertEqual(len(self.spawned),3);self.wait(lambda:successor.closed and old.closed)
+
+    def test_dropping_the_session_closes_ready_and_in_flight_successors(self):
+        self.delay=.3
+        auth._native_login(1);old=self.spawned[0];self.near_limit(old)
+        auth._native_login(1);self.wait(lambda:len(self.spawned)==2)
+        pending=self.spawned[1];auth._drop_session()  # the spawn is still running
+        self.wait(lambda:pending.closed and old.closed);self.assertIsNone(auth._succ['ready'])
+        self.wait(lambda:not auth._succ['busy'])
+        auth._native_login(1);self.near_limit(auth._session)
+        auth._native_login(1);self.wait(lambda:auth._succ['ready'] is not None)
+        ready=auth._succ['ready'][0];auth._drop_session()
+        self.assertTrue(ready.closed)
+
+    def test_unobservable_store_never_prepares_a_successor(self):
+        self.state=None;auth._native_login(1)
+        self.assertIsNone(auth._session);self.assertFalse(auth._succ['busy']);self.assertEqual(len(self.spawned),1)
+
+
+class ChildStderr(unittest.TestCase):
+    def test_tail_is_bounded_and_keeps_the_newest_bytes(self):
+        tail=native._Tail()
+        for index in range(100):tail.add(b'%05d ' % index+b'x'*250+b'\n')
+        self.assertLessEqual(len(tail.data),native.STDERR_TAIL);self.assertIn('00099',tail.text());self.assertNotIn('00000',tail.text())
+
+    def test_drain_thread_empties_a_real_pipe_beyond_the_ring_size(self):
+        read,write=os.pipe();session=native.Session.__new__(native.Session)
+        session.proc=MagicMock();session.proc.stderr=os.fdopen(read,'rb');session.stderr=native._Tail()
+        drain=threading.Thread(target=session._drain,daemon=True);drain.start()
+        with os.fdopen(write,'wb',buffering=0) as out:
+            for _ in range(64):out.write(b'noise '*1000)  # 384 KB, far more than a pipe buffer
+            out.write(b'FINAL LINE\n')
+        drain.join(2);self.assertFalse(drain.is_alive())
+        self.assertLessEqual(len(session.stderr.data),native.STDERR_TAIL);self.assertTrue(session.stderr.text().endswith('FINAL LINE\n'))
+
+    def test_redaction_strips_tokens_jwts_and_bearer_values(self):
+        jwt='eyJhbGciOiJSUzI1NiJ9.eyJzdWIiOiJ1c2VyIn0.c2lnbmF0dXJl'
+        text=f'GET failed Authorization: Bearer {jwt}\naccess_token="abc123"\nrefresh_token: rt-AbCdEf123456\nopaque {"A"*40}\nsk-live_12345678\nplain note\x1b[31m'
+        out=native.redact(text)
+        for secret in (jwt,'abc123','AbCdEf123456','A'*40,'live_12345678'):self.assertNotIn(secret,out)
+        self.assertIn('plain note',out);self.assertNotIn('\x1b',out)
+
+    def test_only_channel_and_protocol_errors_carry_the_redacted_tail(self):
+        session=native.Session.__new__(native.Session);session.proc=MagicMock();session.proc.poll.return_value=None
+        session.stderr=native._Tail();session.stderr.add(b'panic: boom Bearer sekrit-token-value\n')
+        for code in ('native_auth_channel','native_auth_protocol'):
+            error=session._fail(code,'Native credential channel ended',502)
+            self.assertIn('panic: boom',error.message);self.assertNotIn('sekrit',error.message);self.assertEqual((error.code,error.status),(code,502))
+        self.assertEqual(session._fail('native_auth_rpc','rejected',422).message,'rejected')
+        quiet=native.Session.__new__(native.Session);quiet.proc=MagicMock();quiet.stderr=native._Tail()
+        self.assertEqual(quiet._fail('native_auth_channel','ended',502).message,'ended')
+        self.assertLessEqual(len(session._fail('native_auth_channel','x',502).message),native.ERROR_TAIL+80)
