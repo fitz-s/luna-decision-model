@@ -72,9 +72,15 @@ def validate_pair(status: dict, account: dict) -> Credential:
     return Credential(token, account_id, ORIGIN, override)
 
 
+def codex_executable() -> str | None:
+    """The resolved codex binary a Session launches, or None when none is configured or on PATH."""
+    executable = os.environ.get("LDM_CODEX_BIN") or shutil.which("codex")
+    return str(Path(executable).resolve()) if executable else None
+
+
 class Session:
     def __init__(self, deadline: float):
-        executable = os.environ.get("LDM_CODEX_BIN") or shutil.which("codex")
+        executable = codex_executable()
         if not executable:
             raise NativeRpcError("codex_missing", "Install Codex and use its own ChatGPT login", 422)
         self.home = Path(os.environ.get("CODEX_HOME", str(Path.home()/".codex"))).expanduser().resolve()
@@ -84,7 +90,7 @@ class Session:
         for name in ("OPENAI_API_KEY", "CODEX_API_KEY", "CODEX_ACCESS_TOKEN", "CODEX_AUTH_JWT", "OPENAI_BASE_URL", "OPENAI_API_BASE"):
             env.pop(name, None)
         # Process-local provider selection only; never changes config.toml or the store mode.
-        command = [str(Path(executable).resolve()), "-c", 'model_provider="openai"', "app-server"]
+        command = [executable, "-c", 'model_provider="openai"', "app-server"]
         try:
             self.proc = subprocess.Popen(command, stdin=subprocess.PIPE, stdout=subprocess.PIPE,
                                          stderr=subprocess.DEVNULL, cwd=self.neutral.name, env=env)
